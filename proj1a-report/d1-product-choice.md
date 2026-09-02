@@ -3,8 +3,10 @@
 **Product:** Hungry Wolf — a gamified food-delivery platform (customers,
 restaurants, delivery partners; points, rewards, donation counter).
 
-**Repo:** https://github.com/tmddnrdl333/CSC510_SE26F (our fork of a Fall 2025
-team's project; the product lives in `proj2/`).
+**Repo:** https://github.com/tmddnrdl333/CSC510_SE26F — forked from
+`SeojinSeojin/SE_2025_projects`, itself a fork of the original
+`yashvinshah/SE_2025_projects` (a Fall 2025 team's project); the product
+lives in `proj2/`.
 
 **Why we picked it:**
 
