@@ -67,7 +67,7 @@ divergence from `usecases.md` in their own titles and in the shared tables.
   verified unaffected.
 - **This file's samples cover batches 1–2 (UC8/10/11/13/14/15/16/17/18/20).**
   Batch 3–4 samples (UC1/3/4/5/7) live in `raw-output/*.txt`; batch 5
-  (UC2/6/9/12/19) in `../proj1-26F/proj1a.md`. Run commands for all five
+  (UC2/6/9/12/19) in `proj1a-report/uc-validation-notes-uc2-6-9-12-19.md`. Run commands for all five
   batches are consolidated in `results-table.md`.
 
 ## Findings and explanations (by use case)

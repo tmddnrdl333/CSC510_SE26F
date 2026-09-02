@@ -9,7 +9,7 @@ One row per test — 120 tests plus UC4's one documented non-automated
 finding — connecting each test to the use case (and extension) it exercises,
 ordered by use case. Suite files: `proj2/tests/uc<N>-*.test.js`, except UC5
 (`proj2/client/src/contexts/uc5-build-cart.test.tsx`, CRA/jsdom runner) and
-UC2/6/9/12/19 (all in `proj1-26F/uc-usecases.test.js`). Who wrote which suite
+UC2/6/9/12/19 (all in `proj2/tests/uc2-6-9-12-19-usecases.test.js`). Who wrote which suite
 is tracked by git history.
 
 | Test | Use case (ext) | What it proves |

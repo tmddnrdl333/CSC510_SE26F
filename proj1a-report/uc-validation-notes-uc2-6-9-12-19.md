@@ -2,7 +2,7 @@
 
 ## Code link
 
-- Test implementation: [proj1-26F/uc-usecases.test.js](proj1-26F/uc-usecases.test.js)
+- Test implementation: [proj2/tests/uc2-6-9-12-19-usecases.test.js](proj2/tests/uc2-6-9-12-19-usecases.test.js)
 - Use-case source: [proj1a-report/usecases.md](proj1a-report/usecases.md)
 - Existing project test suite: [proj2/tests/example.test.js](proj2/tests/example.test.js)
 
@@ -11,13 +11,13 @@
 Command run:
 
 ```bash
-cd proj2 && npx jest --config='{"rootDir":"..","testEnvironment":"node","testMatch":["**/proj1-26F/*.test.js"]}' --runTestsByPath ../proj1-26F/uc-usecases.test.js --runInBand --verbose
+cd proj2 && npx jest tests/uc2-6-9-12-19-usecases.test.js --runInBand --no-coverage --verbose
 ```
 
 Sample output:
 
 ```text
- FAIL  ../proj1-26F/uc-usecases.test.js
+ FAIL  ../proj2/tests/uc2-6-9-12-19-usecases.test.js
   UC2 — Log in
     ✓ allows a registered customer to log in with valid credentials (116 ms)
   UC6 — Place an order
@@ -88,4 +88,4 @@ Main blind spots:
 - No checks for validation gaps documented in [proj1a-report/usecases.md](proj1a-report/usecases.md), such as negative totals, missing workflow enforcement, or route-level authorization gaps.
 - No tests that run the actual Firebase-backed flow used by the app in production, so the project’s own suite can miss runtime behavior that is only visible through live server calls.
 
-In short, the existing suite is useful for helper logic but not sufficient to prove the critical user journeys described by the requirement document. The new UC-focused tests in [proj1-26F/uc-usecases.test.js](proj1-26F/uc-usecases.test.js) are a better match for the use-case-level validation requested in this assignment.
+In short, the existing suite is useful for helper logic but not sufficient to prove the critical user journeys described by the requirement document. The new UC-focused tests in [proj2/tests/uc2-6-9-12-19-usecases.test.js](proj2/tests/uc2-6-9-12-19-usecases.test.js) are a better match for the use-case-level validation requested in this assignment.

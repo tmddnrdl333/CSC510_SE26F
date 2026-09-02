@@ -29,7 +29,7 @@ npx jest tests/uc1-signup-role.test.js tests/uc3-manage-profile.test.js tests/uc
 CI=true npx react-scripts test src/contexts/uc5-build-cart.test.tsx --verbose
 
 # batch 5 — UC2/6/9/12/19: 5 tests, 3 pass + 2 red on real bugs
-npx jest --config='{"rootDir":"..","testEnvironment":"node","testMatch":["**/proj1-26F/*.test.js"]}' --runTestsByPath ../proj1-26F/uc-usecases.test.js --runInBand --verbose
+npx jest tests/uc2-6-9-12-19-usecases.test.js --runInBand --no-coverage --verbose
 ```
 
 **Total: 120 tests — 110 pass, 10 red (8 `[DOC EXPECTATION]` + 2 asserting
@@ -37,7 +37,7 @@ documented behavior against real bugs).** (Batch 1's three red tests are
 represented in the table by their paired green STAR-FINDING rows rather than
 dedicated rows.) Raw output samples:
 `uc-validation-notes.md` (batches 1–2), `raw-output/*.txt` (batches 3–4),
-`../proj1-26F/proj1a.md` (batch 5).
+`proj1a-report/uc-validation-notes-uc2-6-9-12-19.md` (batch 5).
 
 ## Environment note
 
@@ -64,7 +64,7 @@ concurrency findings (UC10, UC15) are worth re-running against it.
 | UC1 finding: empty profile object accepted | Step 1 says "fills the role-specific profile" | Role-specific fields required | **FAIL/finding** — `profile: {}` → 201; only `isObject()` is checked (`auth.js:12`) |
 | UC1 star finding: password stored in plaintext | usecases.md ext 4a; the code comment says "hash this password" (`auth.js:31`) | Password stored as a hash | **FAIL/finding** — the raw Firestore doc holds the submitted password verbatim |
 | UC1 `[DOC EXPECTATION]`: stored password must be hashed | Assert the fix for the star finding as a red test | Stored value ≠ submitted value | **FAIL (by design)** — stored value is `"supersecret"`; stays red until `/register` hashes |
-| UC2 main flow: login with valid credentials | Cover the happy path (`auth.js:47-82`) | 200 with the user payload | PASS (`proj1-26F/uc-usecases.test.js`) |
+| UC2 main flow: login with valid credentials | Cover the happy path (`auth.js:47-82`) | 200 with the user payload | PASS (`proj2/tests/uc2-6-9-12-19-usecases.test.js`) |
 | UC3 main flow: edit a field, re-read it | Cover the happy path | 200, change persists and is visible on GET | PASS |
 | UC3 auth: wrong password / non-customer role | Doc'd guards (`customer.js:25, 60`) | 401 | PASS |
 | UC3 star finding: address change keeps stale coordinates | usecases.md ext 3a (`models/User.js:119-124`) | New address → new coordinates, or the request fails | **FAIL/finding** — 200 but `location` stays the old point; the geocode miss leaves coordinates untouched |
@@ -86,7 +86,7 @@ concurrency findings (UC10, UC15) are worth re-running against it.
 | UC5 finding: cross-restaurant cart, no guard | usecases.md ext 3a | One coherent order per restaurant, or the mix is blocked | **FAIL/finding** — both items sit in one cart; the rule is only applied by a silent split at checkout (`client/src/components/customer/Cart.tsx:106`) |
 | UC5 star finding: cart lost on refresh | usecases.md ext 1a (`CartContext.tsx:37`) | Cart survives a refresh on the way to checkout | **FAIL/finding** — the cart is `useState` only and nothing is written to `localStorage`; a remount empties it |
 | UC5 `[DOC EXPECTATION]`: cart survives a refresh | Assert the fix for the star finding as a red test | Items still present after remount | **FAIL (by design)** — empty after remount; stays red until the cart is persisted |
-| UC6 finding: negative totalAmount accepted | usecases.md ext 2b — validation is presence-only (`orders.js:34-40`) | 400, no order created | **FAIL (real bug)** — 201, order created; the test asserts the documented behavior and stays red (`proj1-26F/uc-usecases.test.js`) |
+| UC6 finding: negative totalAmount accepted | usecases.md ext 2b — validation is presence-only (`orders.js:34-40`) | 400, no order created | **FAIL (real bug)** — 201, order created; the test asserts the documented behavior and stays red (`proj2/tests/uc2-6-9-12-19-usecases.test.js`) |
 | UC7 main flow: GET /customer order list | Cover the happy path | The customer's orders with current status | PASS |
 | UC7: list scoped to the customer | `orders.js:93-95` | Only this customer's orders | PASS |
 | UC7 ext 2a: missing customerId | Doc'd extension (`orders.js:89`) | 400 | PASS |
@@ -99,7 +99,7 @@ concurrency findings (UC10, UC15) are worth re-running against it.
 | UC8 ext 1a: rating 0 / 6 / 3.5 / "four" | Doc'd validator (`orders.js:246`) | 400 each | PASS |
 | UC8 ext 2a/2b/2c/2d: missing order / wrong customer / undelivered / already rated | Doc'd guards (`orders.js:262-278`) | 404 / 403 / 400 / 400 | PASS — and the first rating survives a second attempt |
 | UC8 ext 3a: no stored average updated | Doc says averages are derived at read time (`customer.js:97-122`) | Restaurant doc byte-identical before/after rating | PASS (finding confirmed) |
-| UC9 main flow: points awarded on delivery | Cover the earn path (`points.js:189-237`) | Earned transaction + updated totals persisted to the ledger | PASS (`proj1-26F/uc-usecases.test.js`) |
+| UC9 main flow: points awarded on delivery | Cover the earn path (`points.js:189-237`) | Earned transaction + updated totals persisted to the ledger | PASS (`proj2/tests/uc2-6-9-12-19-usecases.test.js`) |
 | UC9 earn rate vs README *(still not automated — candidate follow-up)* | README promises "10% of bill" (15% for Local Legends, `proj2/README.md:102-103`); code awards `Math.floor(orderAmount)` = 1 pt/$, no Local Legends branch (`points.js:195`) | $50 order → 5 points | **Expected FAIL** — docs and code disagree; see `usecases.md` UC9 1a |
 | UC10 main flow: redeem at 1pt = $0.01 | Cover the happy path | Balance deducted, transaction logged | PASS |
 | UC10 ext 2a/3a/3b: invalid points, insufficient balance, no record | Doc'd guards (`points.js:69, 92-97, 85-88`) | 400 / 400 / 404 | PASS |
@@ -109,9 +109,9 @@ concurrency findings (UC10, UC15) are worth re-running against it.
 | UC11 ext 1a/2a/2b: bad input / no API key / unparseable reply | Doc'd guards (`voice.js:35-42,71-75`) | 400 / 500 / 422 | PASS |
 | UC11 ext 2c: upstream Gemini HTTP error | Error handler (`voice.js:83-87`) | Upstream status passed through | PASS — a Gemini 429 surfaces as our 429 |
 | UC11 [DOC EXPECTATION]: voice can order food | The feature's own name promises ordering | 200 with an ordering action | **FAIL (by design)** — the action list is 5 navigation commands (`voice.js:6-12`); a food-ordering app's voice feature cannot order food |
-| UC12 finding: status transitions unguarded | usecases.md ext 3a (`orders.js:184`) | A `pending → delivered` leap rejected | **FAIL (real bug)** — accepted; test asserts the documented workflow and stays red (`proj1-26F/uc-usecases.test.js`; corroborates the UC7 ext 2b row) |
+| UC12 finding: status transitions unguarded | usecases.md ext 3a (`orders.js:184`) | A `pending → delivered` leap rejected | **FAIL (real bug)** — accepted; test asserts the documented workflow and stays red (`proj2/tests/uc2-6-9-12-19-usecases.test.js`; corroborates the UC7 ext 2b row) |
 | UC13 main: only own orders returned | Happy path (`orders.js:113-142`) | 2 of 3 seeded orders | PASS |
-| UC13 data contract for client charts | Insights.tsx aggregates client-side | totalAmount/status/parseable dates | PASS |
+| UC13 data contract for client charts | Insights.tsx aggregates client-side | totalAmount / status / parseable dates | PASS |
 | UC13 ext 2a: missing restaurantId | Doc'd guard (`orders.js:119`) | 400 | PASS |
 | UC13 ext 2b: full raw list, no pagination | Doc'd scalability cost | All 60 seeded orders in one response | PASS (finding confirmed) |
 | UC14 main flow: add/edit menu items | Cover the happy path | 200, menu persisted and readable via GET | PASS |
@@ -136,7 +136,7 @@ concurrency findings (UC10, UC15) are worth re-running against it.
 | UC18: non-numeric fee/tip | Coercion (`delivery.js:58-60`) | 0, not NaN | PASS |
 | UC18: totalEarnings accumulates | Server ledger (`User.js:153-166`) | 5 + 5 = 10 after two deliveries | PASS (rider kept "busy" to dodge the known `updateDeliveryStatus` 500) |
 | UC18 two-ledgers finding | totalEarnings written but never served | Response shape is orders-only; no order carries totalEarnings, each carries per-order earning | PASS (finding confirmed) |
-| UC19 main flow: badge lookup for stored stats | Cover the evaluation path (`services/badgeService.js`) | Computed badge data for a valid customer | PASS (`proj1-26F/uc-usecases.test.js`) |
+| UC19 main flow: badge lookup for stored stats | Cover the evaluation path (`services/badgeService.js`) | Computed badge data for a valid customer | PASS (`proj2/tests/uc2-6-9-12-19-usecases.test.js`) |
 | UC20 main flow: floor(delivered/10) | Cover the happy path | 3 meals for 37 delivered orders | PASS |
 | UC20 ext 2a: reject zero/negative mealsToAdd | Doc'd guard (`donations.js:47`) | 400 | PASS |
 | UC20 star finding: unauthenticated counter inflation | Doc flags no bound on the increment endpoint (`donations.js:59`) | Some limit or auth check | **FAIL/finding** — any caller sets the stored counter to an arbitrary value (999,999,999 in one call), no auth, no bound |

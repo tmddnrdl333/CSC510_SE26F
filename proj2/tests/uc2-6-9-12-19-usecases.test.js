@@ -40,14 +40,14 @@ const invokeRoute = async (router, path, method, req, res) => {
 describe('UC2 — Log in', () => {
   it('allows a registered customer to log in with valid credentials', async () => {
     jest.resetModules();
-    jest.doMock('../proj2/server/models/User', () => ({
+    jest.doMock('../server/models/User', () => ({
       findByEmail: jest.fn().mockResolvedValue({
         password: 'secret123',
         toJSON: () => ({ id: 'cust-1', email: 'customer@example.com', role: 'customer' }),
       }),
     }));
 
-    const authRouter = require('../proj2/server/routes/auth');
+    const authRouter = require('../server/routes/auth');
     const req = { body: { email: 'customer@example.com', password: 'secret123' } };
     const res = mockRes();
 
@@ -66,7 +66,7 @@ describe('UC6 — Place an order', () => {
   it('blocks a negative total before creating an order', async () => {
     jest.resetModules();
     const orderSet = jest.fn().mockResolvedValue();
-    jest.doMock('../proj2/server/config/firebase', () => ({
+    jest.doMock('../server/config/firebase', () => ({
       db: {
         collection: jest.fn(() => ({
           doc: jest.fn(() => ({ set: orderSet })),
@@ -74,7 +74,7 @@ describe('UC6 — Place an order', () => {
       },
     }));
 
-    const orderRouter = require('../proj2/server/routes/orders');
+    const orderRouter = require('../server/routes/orders');
     const req = {
       body: {
         restaurantId: 'rest-101',
@@ -98,7 +98,7 @@ describe('UC9 — Earn and view points', () => {
     jest.resetModules();
     const pointsSet = jest.fn().mockResolvedValue();
     const fakePointsDoc = { exists: false };
-    jest.doMock('../proj2/server/config/firebase', () => ({
+    jest.doMock('../server/config/firebase', () => ({
       db: {
         collection: jest.fn(() => ({
           doc: jest.fn(() => ({
@@ -109,7 +109,7 @@ describe('UC9 — Earn and view points', () => {
       },
     }));
 
-    const { awardPointsForOrder } = require('../proj2/server/routes/points');
+    const { awardPointsForOrder } = require('../server/routes/points');
     await awardPointsForOrder('cust-1', 42.75);
 
     expect(pointsSet).toHaveBeenCalledWith(
@@ -128,7 +128,7 @@ describe('UC12 — Handle an incoming order', () => {
   it('requires a valid kitchen workflow before an order can be marked delivered', async () => {
     jest.resetModules();
     const orderUpdate = jest.fn().mockResolvedValue();
-    jest.doMock('../proj2/server/config/firebase', () => ({
+    jest.doMock('../server/config/firebase', () => ({
       db: {
         collection: jest.fn(() => ({
           doc: jest.fn(() => ({
@@ -138,7 +138,7 @@ describe('UC12 — Handle an incoming order', () => {
       },
     }));
 
-    const orderRouter = require('../proj2/server/routes/orders');
+    const orderRouter = require('../server/routes/orders');
     const req = {
       params: { id: 'order-42' },
       body: { status: 'delivered' },
@@ -164,7 +164,7 @@ describe('UC19 — Earn and view badges', () => {
       }),
     };
 
-    jest.doMock('../proj2/server/config/firebase', () => ({
+    jest.doMock('../server/config/firebase', () => ({
       db: {
         collection: jest.fn(() => ({
           doc: jest.fn(() => ({
@@ -174,21 +174,21 @@ describe('UC19 — Earn and view badges', () => {
       },
     }));
 
-    jest.doMock('../proj2/server/services/buildCustomerStats', () => ({
+    jest.doMock('../server/services/buildCustomerStats', () => ({
       buildCustomerStats: jest.fn().mockResolvedValue({ totalOrdersCount: 5, lifetimeSpend: 200 }),
     }));
 
-    jest.doMock('../proj2/src/badges/badgeDefinitions', () => ({
+    jest.doMock('../src/badges/badgeDefinitions', () => ({
       badgeDefinitions: [{ id: 'total_orders', metric: 'totalOrdersCount', tiers: [{ tier: 'bronze', threshold: 5 }] }],
     }));
 
-    jest.doMock('../proj2/src/badges/evaluateBadges', () => ({
+    jest.doMock('../src/badges/evaluateBadges', () => ({
       evaluateBadges: jest.fn().mockReturnValue([
         { id: 'total_orders', currentTier: 'bronze', value: 5 },
       ]),
     }));
 
-    const { getCustomerBadges } = require('../proj2/server/services/badgeService');
+    const { getCustomerBadges } = require('../server/services/badgeService');
     const result = await getCustomerBadges('cust-1');
 
     expect(result.evaluatedBadges).toEqual(
