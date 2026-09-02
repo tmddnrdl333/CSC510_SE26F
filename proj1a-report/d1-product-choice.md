@@ -6,7 +6,7 @@ restaurants, delivery partners; points, rewards, donation counter).
 **Repo:** https://github.com/tmddnrdl333/CSC510_SE26F (our fork of a Fall 2025
 team's project; the product lives in `proj2/`).
 
-**Why we picked it (draft — edit freely):**
+**Why we picked it:**
 
 We picked Hungry Wolf because it is a full-stack product (React 19 client,
 Express server, Firestore database) that is large enough to hide real design

@@ -62,6 +62,10 @@ divergence from `usecases.md` in their own titles and in the shared tables.
   `proj2/client` CRA/jsdom runner — `uc5-build-cart.test.tsx` (batch 4)
   proves it — so UC17's tests assert the fabricated-courier finding against
   the component source with cited lines instead of rendering it.
+- **Disclosed test-infrastructure change:** `proj2/package.json` gained
+  `supertest` and `express` as devDependencies (needed to drive the real
+  routers from the root Jest runner). No product dependency or product code
+  was changed.
 - **Batch 3 extended the fake** with `QuerySnapshot.forEach()` (real Firestore
   has it; `customer.js`'s rating aggregation requires it). All earlier suites
   verified unaffected.
