@@ -194,7 +194,18 @@ rival could not copy-paste. We will pick one and edit it.
 
 ```
 The team: four graduate students, one month to build AND test, roughly ten
-hours per person per week. Skills: <list them honestly>.
+hours per person per week. Skills:
+
+- Seung Wook: 3 yrs professional backend (Java/Spring Boot, some Python);
+  extensive LLM-API integration; ran a personal site on Vercel + Supabase
+- Mahek: 1+ yr AI/ML + full-stack experience (Python, C++,
+  TypeScript/Next.js); built RAG/LLM applications and AI pipelines;
+  experience with FastAPI/Flask, PyTorch, OpenCV, Git/Linux
+- Kevin: Worked with Python, Java, PyTorch, JavaScript, and Flask for a
+  couple of years
+- Liwen: 2 yr LLM and multi-agents; 4 yr AI experience; 5 yr full-stack
+  experience; worked on Python and JavaScript most recently, but also
+  PyTorch, TensorFlow, Java, and SQL before
 
 Our draft milestones:
 1. Rebuild the voice pipeline so it can parse an order-placement intent
