@@ -11,16 +11,15 @@ generic brainstorming.
 > Hungry Wolf is a gamified food-delivery platform connecting customers,
 > restaurants, and delivery partners, with loyalty points, achievement
 > badges, and a public "Meal-for-a-Meal" donation counter. For Project 2 we
-> propose two extensions: (1) an AI dining assistant that sits alongside the
-> menu and personalizes what each customer sees — surfacing dishes based on
-> past orders, dietary restrictions, and stated preferences, instead of the
-> same static list every customer gets today; and (2) a rebuilt voice
-> assistant that can actually place and modify orders by voice, closing the
-> exact gap Project 1a exposed — today's voice feature can only log out,
-> open a screen, or read a total, and cannot order food at all
-> (server/routes/voice.js:6-12). Both extensions build on infrastructure we
-> already have (the existing voice pipeline, the existing menu/cart data
-> model) rather than starting from zero.
+> propose a social leaderboard: users are ranked by loyalty points, badges
+> earned, and donation impact, and can see how they stack up against
+> friends. Points and badges are already tracked per user (the points
+> ledger and badge evaluation service — Project 1a UC9/UC19), and each
+> user's donation impact can be derived from their delivered-order count
+> (the Meal-for-a-Meal mechanic: one meal per ten delivered orders,
+> UC20); the extension adds the social layer on top: friend connections,
+> rankings, and a leaderboard screen. This builds on
+> infrastructure we already have rather than starting from zero.
 
 ---
 
@@ -32,18 +31,17 @@ You are a market analyst. Our product, in one paragraph:
 Hungry Wolf is a gamified food-delivery platform connecting customers,
 restaurants, and delivery partners, with loyalty points, achievement
 badges, and a "Meal-for-a-Meal" donation counter. For our next version we
-are proposing (1) an AI assistant that personalizes the menu shown to each
-customer, and (2) a voice assistant that can actually place and modify
-orders by voice (today's voice feature can only navigate the app).
+are proposing a social leaderboard that ranks users by points, badges, and
+donation impact so they can see how they stack up against friends.
 
 List the ten closest competing products or features — not just full apps,
-but specifically anything offering AI-personalized menus/recommendations
-or voice-based food ordering (Uber Eats and DoorDash should appear if they
-are genuinely among the ten closest; also look for any conversational-AI
-ordering bots, Alexa/Google Assistant food-ordering skills, or AI menu
-personalization features already shipped by any delivery platform — do not
-force them in if a closer match exists). Output a table: product | who
-uses it | main strength | main weakness | price | evidence URL.
+but specifically anything offering social/competitive leaderboards tied to
+food ordering, delivery, or loyalty programs (Uber Eats and DoorDash
+should appear if they are genuinely among the ten closest; also look for
+any loyalty-gamification features or social leaderboards already shipped
+by any delivery, fitness, or rewards platform — do not force them in if a
+closer match exists). Output a table: product | who uses it | main
+strength | main weakness | price | evidence URL.
 
 Hard constraint: we have one month to build AND test whatever we propose
 next — keep that in mind when judging what "competing" even means at our
@@ -90,12 +88,15 @@ DIFFERENTIATOR (rare or absent in rivals like Uber Eats/DoorDash). One
 sentence of justification each — name the rival that has it, or state that
 none does.
 
-Then evaluate these two use cases we are considering for our next version:
-(a) an AI assistant that personalizes the menu shown to each customer, and
-(b) a voice assistant that can place and modify orders (not just navigate).
-For each: is it TABLE STAKES, a DIFFERENTIATOR, or already attempted and
-abandoned by a rival — name the rival if one exists, or state that none
-does. Remember we have one month to build AND test whatever we propose.
+Then evaluate the use case we are considering for our next version: a
+social leaderboard that ranks users by loyalty points, badges, and
+donation impact, with friend connections so users can compare themselves
+against friends. Is it TABLE STAKES, a DIFFERENTIATOR, or already
+attempted and abandoned by a rival — name the rival if one exists (in
+food delivery or in adjacent gamified products like fitness or language
+apps), or state that none does. If a different use case would be a
+stronger differentiator for us than the leaderboard, name it and say why.
+Remember we have one month to build AND test whatever we propose.
 ```
 
 ---
@@ -104,27 +105,37 @@ does. Remember we have one month to build AND test whatever we propose.
 
 ```
 We are designing an extension to Hungry Wolf, a gamified food-delivery app,
-for the general consumer/gig-economy domain. We know the code — we found
-that passwords are stored in plaintext (auth.js:31), that orders are
-created with no payment step at all, that the donation counter can be
-inflated by any unauthenticated caller with no bound (donations.js:59),
-and that delivery-partner pay (deliveryFee + tipAmount) is taken directly
-from client input with no cap. We do not yet know the world around it.
+for the general consumer/gig-economy domain: a social leaderboard ranking
+users by loyalty points, badges, and donation impact, with friend
+connections. We know the code — we found that passwords are stored in
+plaintext (auth.js:31), that there is no session or token so identity is
+client-side only, that the donation counter can be inflated by any
+unauthenticated caller with no bound (donations.js:59), that loyalty
+points can be double-spent through a concurrency race (points.js:82-127),
+and that delivery-partner pay is taken directly from client input with no
+cap. We do not yet know the world around it.
 
 What support material would change this design if we read it? Make a LONG
 list. Consider at least:
-- Laws and regulations: privacy/data protection (given the plaintext
-  password finding), payment/PCI rules (given there is no payment step
-  today), gig-worker labor law (for delivery partners), consumer
-  protection (for the unbounded donation-counter and pay-cap findings).
-- Standards: accessibility (WCAG/ADA) for the voice interface, security
+- Laws and regulations: privacy/data protection for social features (a
+  leaderboard makes a user's ordering activity visible to others; friend
+  graphs are personal data; given the plaintext-password and no-session
+  findings, is our identity layer even fit to build social features on?),
+  consumer protection around gamification (e.g. regulator guidance on
+  dark patterns and engagement-maximizing design), gig-worker labor law
+  (for delivery partners), and any rules on charitable-donation claims
+  (our "Meal-for-a-Meal" counter makes a public giving claim that the
+  code lets anyone inflate).
+- Standards: accessibility (WCAG/ADA) for the leaderboard UI, security
   (OWASP) given the auth findings above.
-- Licenses: of our dependencies, of any data/APIs we use (e.g. the voice
-  model, maps/geocoding).
-- Domain knowledge: any published gig-economy delivery-partner guidance.
-- Human factors: advice on managing a gig workforce our product would
-  employ (delivery partners), including how earnings/payout disputes like
-  the "delivery theft" bug we found should be handled operationally.
+- Licenses: of our dependencies and of any data/APIs we use.
+- Domain knowledge: published research or guidance on competitive
+  gamification and leaderboards (when they motivate users, when they
+  backfire or exclude), and any gig-economy delivery-partner guidance.
+- Human factors: effects of public rankings on user behavior (shame,
+  gaming the metric, unhealthy over-ordering to climb ranks), and how
+  rank-manipulation disputes should be handled operationally given the
+  integrity bugs we already found.
 
 For each item: name a real, findable source; one sentence on which of our
 use cases or findings it touches; and rate it MUST-READ / SHOULD-READ /
@@ -138,20 +149,31 @@ SKIM. We will read the must-reads and cite them in the report.
 ```
 Our product, in one paragraph:
 
-<PRODUCT — paste the one-paragraph description above>
+Hungry Wolf is a gamified food-delivery platform connecting customers,
+restaurants, and delivery partners, with loyalty points, achievement
+badges, and a public "Meal-for-a-Meal" donation counter. For Project 2 we
+propose a social leaderboard: users are ranked by loyalty points, badges
+earned, and donation impact, and can see how they stack up against
+friends. Points and badges are already tracked per user (the points
+ledger and badge evaluation service), and each user's donation impact can
+be derived from their delivered-order count (one meal per ten delivered
+orders); the extension adds the social layer on top: friend connections,
+rankings, and a leaderboard screen. This builds on infrastructure we already have rather
+than starting from zero.
 
-We are specifically considering two extensions: (1) an AI assistant that
-personalizes the menu per customer, and (2) rebuilding voice control so it
-can place and modify orders, not just navigate.
+We are specifically proposing this social leaderboard (rankings by
+points, badges, and donation impact, plus friend connections) as our
+extension.
 
 Propose three versions: SAFE (obvious next step), BOLD (a real bet), and
-WILD (probably wrong, but instructive) — using these two extensions (alone
-or combined) as the raw material, not a brand-new idea. For each:
+WILD (probably wrong, but instructive) — using the leaderboard idea
+(alone or extended) as the raw material, not a brand-new idea. For each:
 - Elevator pitch, two sentences.
 - What four graduate students could build AND test of it in one month.
-- The biggest risk (e.g., can menu personalization work well with our
-  current order-history data; can voice ordering be made reliable enough
-  to trust with a real transaction).
+- The biggest risk (e.g., will users of a delivery app actually add
+  friends; can rankings stay credible when today's code lets any
+  unauthenticated caller inflate the donation counter and double-spend
+  points).
 - The kill signal: "we abandon this version if we see ___."
 
 Do not blend them into one compromise. Keep the three futures distinct.
@@ -165,21 +187,29 @@ Do not blend them into one compromise. Keep the three futures distinct.
 A mission statement gives the WHY (the challenge), the WHAT (the thing we
 build), and the SO WHAT (the benefit). Example of the form:
 
-<paste the Sentiment Analyzer example from poster.md here>
+"Online content can be emotionally overwhelming. Our app helps make sense
+of it. Sentiment Analyzer Pro lets users analyze the emotional tone of
+text, images, news, speech, and YouTube comments. Whether you track brand
+sentiment, filter negativity, or just stay informed, the app makes
+emotional insight fast and accessible. With a Chrome extension and
+improved UI, it is now easier than ever to understand how content feels,
+not just what it says."
 
 Facts about our product:
 - Users: customers, restaurants, delivery partners (gig workers)
-- Problem: neither Uber Eats nor DoorDash personalizes what a customer
-  actually sees on the menu, and neither lets a customer complete an order
-  hands-free by voice — [add whatever your P1 survey confirmed here]
-- New features we are building: (1) an AI assistant that personalizes the
-  menu shown to each customer based on order history/preferences, (2) a
-  voice assistant upgraded from navigation-only to actually placing and
-  modifying orders
-- Existing features: loyalty points, achievement badges, "Meal-for-a-Meal"
-  donation counter tied to delivery volume
-- Known gaps we're building against: no payment step exists today, voice
-  can currently only navigate (cannot place an order), no proof-of-delivery
+- Problem: delivery apps ship loyalty points and badges, but none we
+  know of lets a customer see how they stack up against friends — the gamification
+  is solitary — [add whatever your P1 survey confirmed here]
+- New feature we are building: a social leaderboard that ranks users by
+  loyalty points, badges earned, and donation impact, with friend
+  connections for friends-only rankings
+- Existing features it builds on: loyalty points, achievement badges,
+  "Meal-for-a-Meal" donation counter tied to delivery volume
+- Known gaps we're building against: the donation counter can be inflated
+  by any unauthenticated caller (donations.js:59) and points can be
+  double-spent (points.js:82-127), so credible rankings require fixing
+  integrity first; there is no session/token layer, so social features
+  need real identity
 - Stack: React 19 client, Express server, Firestore database
 
 Write three candidate mission statements, five sentences each. Banned
@@ -208,19 +238,25 @@ hours per person per week. Skills:
   PyTorch, TensorFlow, Java, and SQL before
 
 Our draft milestones:
-1. Rebuild the voice pipeline so it can parse an order-placement intent
-   (item + quantity) from speech, not just the existing 5 navigation
-   commands.
-2. Wire that parsed intent into the existing cart/order endpoints so a
-   voice order actually creates a real order.
-3. Build a "preference profile" per customer from existing order history
-   (Firestore) — no new data collection required.
-4. Add an AI assistant that re-ranks/highlights menu items per customer
-   using that preference profile.
-5. Add a conversational fallback: voice assistant can ask a clarifying
-   question ("small or large?") instead of failing outright.
-6. End-to-end test: place a full order by voice alone, from menu
-   personalization through checkout.
+1. Build an aggregation API that computes each user's leaderboard score
+   from data already in Firestore: loyalty points and badges are stored
+   per user, and donation contribution is derived from the user's
+   delivered-order count — no new data collection required.
+2. Add friend connections: send/accept a friend request, stored in
+   Firestore, with an endpoint to list a user's friends.
+3. Build the leaderboard screen in the React client: global ranking and a
+   friends-only ranking, with the user's own row highlighted and a
+   privacy control so each user chooses whether they appear on the
+   global board (friends-only by default).
+4. Introduce a minimal session/token auth layer (none exists today) and
+   use it to fix the integrity holes the leaderboard depends on: lock
+   down the unauthenticated donation-counter increment (donations.js:59)
+   and the points double-spend race (points.js:82-127) so ranks cannot
+   be forged.
+5. End-to-end test: seed three users (two friends, one not), place
+   orders, verify the global and friends-only rankings update correctly
+   (the friends-only view provably excludes the non-friend) and
+   forged-rank attempts are rejected.
 
 Classify each: REALISTIC / STRETCH / FANTASY, with one sentence of why,
 judged against the hours above — not against a startup with funding. For
@@ -241,19 +277,20 @@ market survey table from P1>
 
 Attack on three fronts:
 1. Nobody wants it — the need is imagined. (Consider: do customers
-   actually want an AI to re-curate their menu, or do they just want to
-   find what they always order faster? Is voice ordering solving a real
-   problem or a novelty nobody uses after week one?)
+   actually want to compete over food ordering, or is a leaderboard a
+   novelty nobody checks after week one? Would people even add friends in
+   a delivery app? Does making ordering activity visible to friends
+   create a privacy chill that suppresses use instead of driving it?)
 2. They cannot build it — the month is too short, the team too green.
-   (Consider: reliable speech-to-intent-to-order pipelines and useful menu
-   personalization are both nontrivial ML/UX problems — can four students
-   with ~10 hrs/week each actually ship and test both in a month on top of
-   an inherited codebase that still has no payment step and plaintext
-   passwords?)
-3. Someone does it better — name who. (Consider Alexa/Google Assistant
-   food-ordering skills, any AI-recommendation features Uber Eats or
-   DoorDash have already shipped, and any startup doing conversational
-   food ordering.)
+   (Consider: a credible leaderboard needs real identity and anti-cheat,
+   but the inherited codebase has plaintext passwords, no session/token
+   layer, an unauthenticated donation-counter endpoint, and a points
+   double-spend race — can four students with ~10 hrs/week each fix the
+   integrity layer AND ship the social layer in one month?)
+3. Someone does it better — name who. (Consider loyalty-gamification and
+   social leaderboards already shipped anywhere: delivery platforms'
+   rewards programs, and adjacent products that made leaderboards their
+   core loop — fitness and language-learning apps among them.)
 
 Make each attack as strong as you honestly can; no strawmen. Then, for each
 attack, state what evidence would defeat it. We will go collect that
