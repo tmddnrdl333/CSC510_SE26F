@@ -1,60 +1,54 @@
-The three futures should test different product hypotheses: SAFE tests whether voice can reliably execute known cart actions, BOLD tests whether personalization improves discovery, and WILD tests whether a conversational agent can replace most of the menu experience.
+One non-negotiable applies to all three: no real-user leaderboard should launch until authentication is server-side, point redemption is atomic, and donation impact is derived only from authenticated, delivered orders. Otherwise the experiment measures exploitability, not product value.
 
-## SAFE — Voice checkout, narrowly bounded
+## SAFE — Friends-only weekly leaderboard
 
-**Elevator pitch:** Turn the existing voice navigator into a hands-free cart controller that can add, remove, and change item quantities, then place an order after reading back every material detail. It does not personalize or improvise: it executes a small, explicit command set against the existing menu and cart model.
-
-**What four students can build and test in one month:**
-
-- Extend `server/routes/voice.js` with structured intents for search, add, remove, quantity, modifiers, address selection, tip, and checkout.
-- Resolve spoken dishes only against the selected restaurant’s current menu; ambiguous matches trigger a clarification instead of a guess.
-- Add an order review dialogue that reads back restaurant, items, quantities, fees, tip, discount, address, and total before requiring an explicit “place order.”
-- Use sandbox payment or a clearly labeled test-order flow; never collect card numbers through speech.
-- Test approximately 150 scripted and adversarial conversations covering accents, background noise, unavailable items, duplicate commands, interruptions, corrections, and accidental confirmation.
-- Conduct task-based usability testing with 10–15 participants, including several who use assistive technology.
-
-**Biggest risk:** Speech recognition may appear impressive in demonstrations but still make enough item, modifier, or quantity mistakes that users cannot trust it with a transaction.
-
-**Kill signal:** “We abandon this version if we see any order submitted without explicit confirmation, or fewer than 95% of test sessions end with the intended cart after clarification and correction.”
-
----
-
-## BOLD — A genuinely personalized menu
-
-**Elevator pitch:** Give every customer a ranked menu that elevates dishes matching their history, dietary restrictions, price range, and stated preferences while preserving access to the full original menu. The product bet is that better ordering comes from reducing discovery effort, not from adding another chatbot.
+**Elevator pitch:** Hungry Wolf adds an opt-in leaderboard where mutually connected friends compare verified loyalty points, badges, and meal impact for the current week. It is a small social layer over existing metrics, with private-by-default profiles and no global ranking.
 
 **What four students can build and test in one month:**
 
-- Build a hybrid ranker using available order history plus explicit preference inputs such as cuisine, price range, vegetarian status, allergies, and disliked ingredients.
-- Implement a cold-start questionnaire so new or low-history customers receive useful results without fabricated behavioral assumptions.
-- Treat allergies and firm dietary restrictions as deterministic filters, never as probabilistic recommendations.
-- Add a “Recommended for you” section alongside the unchanged full menu, with short explanations such as “Similar to previous orders” or “Matches your vegetarian preference.”
-- Provide controls to edit preferences, dismiss recommendations, reset personalization, and temporarily browse without personalization.
-- Evaluate historical orders offline with top-*k* ranking metrics, then run a controlled prototype study comparing personalized and static menus on selection time, recommendation acceptance, perceived relevance, and trust.
-- Explicitly test sparse histories, contradictory preferences, shared accounts, changing diets, and restaurants with limited menu metadata.
+- Mutual friend requests using username or invite code; no contact importing, recommendations, messaging, or public search.
+- One leaderboard screen with three separate tabs—points, badges, and meal impact—rather than an opaque composite score.
+- Weekly resets, pseudonymous display names, metric-level visibility controls, unfriend/block, opt-out, and “how ranking works.”
+- Server-side authentication/authorization, atomic point updates, and donation impact calculated from immutable delivered-order records.
+- Test with 15–25 seeded friend groups for 7–10 days, measuring invitation acceptance, repeat viewing, ranking comprehension, perceived pressure, and attempted manipulation.
 
-**Biggest risk:** Current order histories and menu metadata may be too sparse or inconsistent to outperform simple cuisine and popularity rules, especially for new users.
+**Biggest risk:** The feature may be trustworthy and usable but still irrelevant because food-delivery users do not naturally think of ordering as a social activity or want friends to infer their spending and ordering frequency.
 
-**Kill signal:** “We abandon this version if personalization produces no meaningful improvement over a popularity-plus-preferences baseline, or if any hard dietary restriction is violated in testing.”
+**Kill signal:** “We abandon SAFE if fewer than 30% of invited testers opt in and connect with at least one friend, or if more than 20% say the ranking exposes more ordering information than they are comfortable sharing.”
 
----
+## BOLD — Wolf Packs: cooperative social competition
 
-## WILD — Replace the menu with a voice-first dining agent
-
-**Elevator pitch:** Instead of browsing a menu, the customer tells Hungry Wolf what they want—“something spicy and vegetarian under $20”—and the assistant selects dishes, negotiates alternatives, builds the cart, and places the confirmed order. The traditional menu becomes a fallback rather than the primary interface.
+**Elevator pitch:** Friends form small “Wolf Packs” that compete in short seasons to unlock a collective Meal-for-a-Meal milestone, with rankings based on verified contribution rather than raw spending alone. The bet is that shared charitable progress gives people a socially acceptable reason to invite friends and return to a delivery app.
 
 **What four students can build and test in one month:**
 
-- Limit the prototype to three to five restaurants with manually cleaned menus, modifier rules, dietary tags, prices, and availability.
-- Combine personalized ranking with a multi-turn voice agent that asks constraints, proposes a small set of dishes, explains its choices, modifies the cart, and initiates checkout.
-- Constrain every agent action through typed server tools: menu search, item lookup, cart mutation, total calculation, and order submission.
-- Make the server authoritative for menu availability, prices, discounts, delivery fees, tips, donation increments, and partner pay.
-- Require a deterministic final read-back and confirmation outside the generative model’s control.
-- Run 100 end-to-end scenarios involving vague requests, allergies, substitutions, hallucinated dishes, prompt injection, changed prices, speech errors, and mid-conversation corrections.
-- Compare it with normal menu browsing on completion rate, time, correction count, confidence, and willingness to use it for a real purchase.
+- Invite-only packs of three to six people with a captain, pack name, and one two-week season.
+- A pack leaderboard using a published score formula that balances verified points, distinct badges, and delivered-order-derived meal impact.
+- A team progress meter, weekly recap, limited celebratory notifications, and a personal contribution breakdown.
+- Daily scoring caps and diminishing returns so one high spender cannot dominate by repeatedly ordering.
+- No chat, public discovery, custom images, prizes, cross-pack messaging, or permanent seasons.
+- Test 6–10 pre-recruited packs—roughly 24–50 participants—comparing engagement with a control group that sees only personal progress.
+- Measure successful pack formation, invited-user activation, repeat visits, contribution concentration, perceived fairness, and whether participants understand the scoring formula.
 
-**Biggest risk:** Combining imperfect personalization, probabilistic dialogue, speech recognition, and consequential ordering creates compound errors that may exceed what a one-month prototype can make trustworthy.
+**Biggest risk:** The charitable framing may merely disguise a purchase-frequency contest: stronger users could dominate, low-spending friends could disengage, and public recognition could crowd out the meaning of Meal-for-a-Meal.
 
-**Kill signal:** “We abandon this version if more than 5% of sessions contain a wrong or nonexistent item, an unsafe dietary recommendation, or a cart state the user cannot understand and correct before checkout.”
+**Kill signal:** “We abandon BOLD if fewer than half of recruited packs reach three active members, or if the top member supplies more than 60% of a typical pack’s score and lower-ranked members participate less than the personal-progress control group.”
 
-SAFE is the defensible Project 2 commitment, BOLD is the strongest isolated product experiment, and WILD is valuable primarily as a constrained research prototype—not as a one-month production promise.
+## WILD — Hungry Wolf City League
+
+**Elevator pitch:** Hungry Wolf becomes a public competitive food network, placing customers into campus or neighborhood leagues with live rankings, seasonal promotion and relegation, shareable titles, and citywide donation-impact battles. Ordering food becomes a spectator competition in which users and local communities fight to become the most loyal and most charitable Wolves.
+
+**What four students can build and test in one month:**
+
+- A high-fidelity prototype backed by synthetic accounts and scripted order events—not a production release involving real purchases.
+- One campus or neighborhood league, public profiles, a combined score, top-three podium, rank movement, seasonal tiers, and shareable winner cards.
+- Simulated fraud cases—including concurrent point redemption, forged deliveries, duplicate accounts, refunds, and donation inflation—to observe how credibility collapses.
+- Moderation and appeal mockups showing flagged scores, provisional ranks, corrected standings, and visible audit explanations.
+- Scenario testing with 20–30 participants plus interviews covering excitement, privacy, shame, fairness, spending pressure, and willingness to be publicly ranked.
+- A red-team exercise in which testers attempt to manipulate the league and infer other users’ ordering behavior.
+
+**Biggest risk:** Public geographic competition could reward unhealthy over-ordering, expose approximate location and economic differences, encourage fake accounts and collusion, produce harassment or shame, and make every existing integrity defect publicly consequential.
+
+**Kill signal:** “We abandon WILD if more than 15% of testers report feeling pressure to order more than they otherwise would, if more than 10% can infer sensitive behavior about another user, or if red-team testers can alter a rank without a verified delivered order.”
+
+The three futures make different bets: SAFE tests whether comparison has any basic social demand; BOLD tests whether small-group charitable identity creates that demand; WILD tests the limits of public competition and should remain a prototype unless its unusually high safety and integrity burden is disproved.
