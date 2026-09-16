@@ -557,3 +557,153 @@ Since Milestone 4 is a STRETCH, we should propose the largest slice of it that w
 
 **Largest Realistic Slice of STRETCH (Milestone 4):**
 Implement a minimal JWT-based auth layer (login/register, middleware) and apply it
+
+## P10 — Red team (mandatory, D5)
+
+### Prompt
+
+```text
+You are hostile to our proposal. Below: our mission statement, milestones,
+and market survey.
+
+OUR MISSION STATEMENT (chosen from the P8 candidates):
+
+Competition only matters when people can trust the score and understand
+what it represents. Hungry Wolf is building a food-delivery community
+where customers can connect with friends and compare verified progress.
+The leaderboard ranks loyalty points, badges earned, and Meal-for-a-Meal
+impact while keeping friend comparisons separate from optional public
+rankings. Its donation score comes directly from completed deliveries --
+one donated meal for every ten delivered orders -- not from self-reported
+activity. This gives customers a trustworthy way to turn ordering,
+achievement, and giving into a shared experience.
+
+OUR MILESTONES (revised after the four-model P9 review):
+
+1. Minimal JWT session layer first -- register/login issue tokens;
+   middleware protects all new endpoints; gate the unauthenticated
+   donation-counter increment (donations.js:59). Best-effort within this
+   milestone: wrap points redemption in a Firestore transaction
+   (points.js:82-127); if it slips, ship with it documented as a known
+   limitation.
+2. Aggregation API -- per-user score from the points ledger, badge count,
+   and delivered-order count (never the mutable public donation counter).
+3. Friend connections -- send/accept/list only; no suggestions, blocking,
+   or contact import.
+4. Leaderboard screen -- global + friends-only ranking, own row
+   highlighted; privacy enforced by the API, not the client (friends-only
+   by default; global opt-in toggle only if time allows).
+5. E2E + abuse tests -- three seeded users (two friends, one not);
+   friends-only view provably excludes the non-friend; forged-rank
+   attempts rejected; two concurrency tests (simultaneous redemptions,
+   repeated donation/rank writes).
+
+OUR MARKET SURVEY (10 rivals confirmed across three models by the
+two-model rule or a live evidence URL):
+
+| Product                            | What it shows about our gap                                                |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| Starbucks Rewards                  | Deepest US food/beverage gamification -- entirely solo, no friend ranking  |
+| DoorDash challenges                | Dominant US delivery app gamifies with solo, time-limited challenges       |
+| Uber Eats loyalty                  | Transactional per-restaurant rewards; verified no customer leaderboard     |
+| Chipotle Summer of Extras          | Real leaderboards, but seasonal (ended Aug 31, 2026), regional, friendless |
+| Snackpass                          | Social food ordering (friends' orders, gifts) but no competitive ranking   |
+| Beli                               | Friend leaderboards over restaurant logging, not verified orders           |
+| ShareTheMeal Teams                 | Donation-team leaderboards in an app with no food ordering                 |
+| Nike Run Club (repr. fitness apps) | The proven friend-leaderboard UX loop -- in fitness, not food              |
+| Gameball (repr. loyalty SaaS)      | Leaderboard SDKs exist but 4-6 week integration, no friend graph           |
+| Grab Rewards Challenges            | Non-US delivery gamification -- single-player only                         |
+
+Gap: no delivery platform ships a persistent, friend-facing leaderboard,
+let alone one ranking loyalty points, badges, and donation impact
+together.
+
+Attack on three fronts:
+
+1. Nobody wants it — the need is imagined. (Consider: do customers
+   actually want to compete over food ordering, or is a leaderboard a
+   novelty nobody checks after week one? Would people even add friends in
+   a delivery app? Does making ordering activity visible to friends
+   create a privacy chill that suppresses use instead of driving it?)
+2. They cannot build it — the month is too short, the team too green.
+   (Consider: a credible leaderboard needs real identity and anti-cheat,
+   but the inherited codebase has plaintext passwords, no session/token
+   layer, an unauthenticated donation-counter endpoint, and a points
+   double-spend race — can four students with ~10 hrs/week each fix the
+   integrity layer AND ship the social layer in one month?)
+3. Someone does it better — name who. (Consider loyalty-gamification and
+   social leaderboards already shipped anywhere: delivery platforms'
+   rewards programs, and adjacent products that made leaderboards their
+   core loop — fitness and language-learning apps among them.)
+
+Make each attack as strong as you honestly can; no strawmen. Then, for each
+attack, state what evidence would defeat it. We will go collect that
+evidence — or concede the point and change the plan.
+```
+
+### Result
+
+Here is the hostile analysis of the Hungry Wolf proposal, structured by the three requested fronts.
+
+### Front 1: Nobody wants it — the need is imagined.
+
+**The Attack:**
+The core premise of Hungry Wolf is that users will voluntarily connect their social graph to a transactional service (food delivery) to engage in competitive ranking. This is a fundamental category error. Food delivery is a utility, not a hobby. Users open DoorDash or Uber Eats to solve a hunger problem, not to check their standing relative to their friends.
+
+1.  **The "Novelty Decay" Problem:** Leaderboards in non-gaming contexts suffer from rapid engagement decay. In fitness apps (like Nike Run Club), the activity is tied to health and self-improvement, which has intrinsic long-term value. In food delivery, the "achievement" is merely the act of spending money. Once the initial novelty of seeing a friend’s name on a list wears off (typically within 2-4 weeks), the leaderboard becomes noise. There is no intrinsic reward for "ordering more food" other than the food itself, which the user already received.
+2.  **The Privacy Chill:** Making ordering activity visible to friends creates a significant social friction. Users may hesitate to order certain items (e.g., late-night junk food, alcohol, or specific dietary choices) if they know their friends can see it. This "privacy chill" can actually *suppress* usage, as users may avoid the app to maintain social discretion. The proposal claims "privacy enforced by the API," but the mere existence of a friend-facing leaderboard changes the psychological contract of the app from private utility to public performance.
+3.  **Low Social Graph Density in Delivery:** Unlike social networks or fitness apps, delivery apps have low social graph density. Users rarely "add friends" in delivery apps because there is no shared context for doing so. The proposal assumes users will manually send/accept friend requests (Milestone 3). In practice, friction in social graph building is the #1 killer of social features. If users don't add friends, the "friends-only" leaderboard is empty, and the "global" leaderboard is a race to the bottom based on who spends the most money, which alienates average users.
+
+**Evidence that would defeat this attack:**
+*   **Retention Data from Adjacent Social-Utility Apps:** Data showing that social features in utility apps (e.g., Strava’s segments, Duolingo’s leagues) have a measurable, sustained impact on long-term retention (beyond 30 days) specifically for the *utility* action (running/learning), not just the social interaction.
+*   **User Intent Surveys:** Primary research (surveys or interviews) with 100+ potential users showing that >30% of users *actively* want to see their friends’ food ordering activity and would use a friend leaderboard if it existed.
+*   **A/B Test Results from a Pilot:** If a small-scale pilot (even a mockup) shows that users who have friends connected to the app have a higher frequency of orders or higher retention than those who do not, controlling for privacy settings.
+
+---
+
+### Front 2: They cannot build it — the month is too short, the team too green.
+
+**The Attack:**
+The proposal attempts to solve two fundamentally different problems in one month: (1) fixing a broken security/integrity layer, and (2) building a new social/competitive feature. The inherited codebase is described as having "plaintext passwords, no session/token layer, an unauthenticated donation-counter endpoint, and a points double-spend race." This is not a "greenfield" project; it is a remediation project with a feature bolted on.
+
+1.  **Security Debt is a Time Sink:** Implementing a "Minimal JWT session layer" (Milestone 1) is not a trivial task. It requires:
+    *   Refactoring all existing endpoints to use middleware.
+    *   Migrating or securing existing user data (plaintext passwords).
+    *   Handling token refresh, expiration, and revocation.
+    *   Fixing the unauthenticated donation counter (donations.js:59) and the points double-spend race (points.js:82-127).
+    *   This alone could consume 2-3 weeks of a 4-person team’s time, leaving only 1-2 weeks for the social layer.
+2.  **The "Best-Effort" Trap:** The proposal states that if the Firestore transaction for points redemption slips, it will be "documented as a known limitation." This is unacceptable for a product that claims to be "trustworthy" (Mission Statement). A leaderboard that can be gamed via double-spending points is not trustworthy. If the integrity layer is not fully fixed, the entire value proposition collapses.
+3.  **Complexity of Aggregation and Privacy:** Milestone 2 (Aggregation API) and Milestone 4 (Leaderboard) require complex queries to combine points, badges, and delivery counts while enforcing privacy rules (friends-only vs. global). This is non-trivial in Firestore, especially with the need to highlight the user’s own row and enforce opt-in/opt-out logic.
+4.  **Testing Overhead:** Milestone 5 requires E2E and abuse tests, including concurrency tests. Writing robust concurrency tests for Firestore transactions is difficult and time-consuming. Four students with ~10 hours/week each (40 hours/week total) have only ~160 hours of capacity. After accounting for security fixes, API development, and testing, there is no buffer for the inevitable bugs and integration issues.
+
+**Evidence that would defeat this attack:**
+*   **Proof of Concept for Security Fixes:** A working prototype of the JWT layer and the fixed points/donation endpoints, demonstrating that the integrity issues are resolved in <1 week.
+*   **Detailed Technical Plan with Time Estimates:** A granular breakdown of the 160 hours, showing exactly how many hours are allocated to security, API, frontend, and testing, with a clear critical path.
+*   **Team Experience Evidence:** Resumes or past projects demonstrating that the team has successfully shipped a secure, multi-user web application with a social graph in a similar timeframe.
+*   **Simplified Scope:** A revised plan that explicitly drops the "global" leaderboard and the "badges" component, focusing only on the core friend-based points leaderboard, to reduce complexity.
+
+---
+
+### Front 3: Someone does it better — name who.
+
+**The Attack:**
+The market survey claims a gap, but it ignores the fact that the *components* of Hungry Wolf’s value proposition are already well-served by existing products, and the *combination* is not unique enough to justify a new app.
+
+1.  **Starbucks Rewards + Social Media:** Starbucks has the deepest loyalty program in the US. Users already share their Starbucks rewards on social media (Instagram, Twitter) as a status symbol. The "friend leaderboard" is effectively replaced by social media sharing. Users don’t need a built-in leaderboard; they use their existing social graphs to showcase their loyalty.
+2.  **Nike Run Club / Strava:** These apps have proven that friend leaderboards work *when the activity is tied to personal improvement*. However, they are not food delivery apps. The key difference is that running is a health activity, while food delivery is a consumption activity. The "better" product is not a food delivery app with a leaderboard, but a fitness app that tracks food intake (like MyFitnessPal) with social features. MyFitnessPal has social features and leaderboards, and it is more relevant to "food" than a delivery app.
+3.  **Gameball / Loyalty SaaS:** The survey mentions Gameball as a "loyalty SaaS" with a 4-6 week integration. This is a red herring. Gameball is a B2B product, not a consumer app. The "better" product is not a SaaS, but the fact that major delivery apps (DoorDash, Uber Eats) have *chosen* not to implement friend leaderboards. This is a signal, not a gap. They have likely tested it and found it ineffective or harmful to the user experience.
+4.  **The "Verified Progress" Claim:** The proposal claims that the donation score is "verified" because it comes from completed deliveries. However, this is not a unique selling point. Any delivery app can track completed deliveries. The "verification" is trivial. The real gap is not in verification, but in the *social* aspect, which is already served by social media.
+
+**Evidence that would defeat this attack:**
+*   **Competitive Analysis of Failed Features:** Evidence that major delivery apps (DoorDash, Uber Eats) have *not* implemented friend leaderboards because they are ineffective, or evidence that they have implemented similar features and they have failed. If they have failed, Hungry Wolf needs a clear reason why their approach is different.
+*   **User Preference for Built-in vs. Social Media:** Data showing that users prefer a built-in, private friend leaderboard over sharing their activity on public social media.
+*   **Differentiation in "Verified Impact":** Evidence that the "Meal-for-a-Meal" donation impact is a unique and compelling feature that is not available in any other app, and that users value this specific type of social proof.
+*   **Pilot Data on Social Sharing:** Data showing that users who use Hungry Wolf’s friend leaderboard are less likely to share their activity on social media, indicating that the built-in feature is a superior substitute.
+
+### Conclusion
+
+The proposal is ambitious but risky. The need is questionable, the technical scope is too large for the team and timeframe, and the competitive landscape suggests that the "gap" may be a feature that users do not want. To proceed, the team must:
+1.  Validate the need with primary user research.
+2.  Reduce the scope to focus on the core friend-based leaderboard, dropping the global leaderboard and badges.
+3.  Prioritize the security fixes and prove they can be completed in <1 week.
+4.  Clearly articulate why their approach is different from and better than existing social media sharing and fitness app leaderboards.
