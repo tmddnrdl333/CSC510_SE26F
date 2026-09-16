@@ -389,6 +389,65 @@ User backlash and churn. Public shaming is a high-risk strategy; users may feel 
 **Kill Signal:**
 "We abandon this version if, within one week of launch, we receive more than 50 negative reviews or social media complaints specifically mentioning the "Hungry Wolf" badge, or if the churn rate of users who received the badge exceeds 20%."
 
+## P8 — Mission statement, minus the buzzwords
+
+### Prompt
+
+```text
+A mission statement gives the WHY (the challenge), the WHAT (the thing we
+build), and the SO WHAT (the benefit). Example of the form:
+
+"Online content can be emotionally overwhelming. Our app helps make sense
+of it. Sentiment Analyzer Pro lets users analyze the emotional tone of
+text, images, news, speech, and YouTube comments. Whether you track brand
+sentiment, filter negativity, or just stay informed, the app makes
+emotional insight fast and accessible. With a Chrome extension and
+improved UI, it is now easier than ever to understand how content feels,
+not just what it says."
+
+Facts about our product:
+- Users: customers, restaurants, delivery partners (gig workers)
+- Problem: delivery apps ship loyalty points and badges, but none we
+  know of lets a customer see how they stack up against friends — the
+  gamification is solitary. Confirmed by our three-model survey:
+  Starbucks, DoorDash, and Uber Eats all gamify solo (no friend ranking
+  anywhere); Chipotle's Summer of Extras shipped real leaderboards but
+  seasonal, regional, and friendless (ended Aug 31, 2026); Snackpass is
+  social but has no competitive ranking; and ShareTheMeal's donation-team
+  leaderboards live in an app with no food ordering — nobody combines the
+  three ranked dimensions with friends in a delivery app
+- New feature we are building: a social leaderboard that ranks users by
+  loyalty points, badges earned, and donation impact, with friend
+  connections for friends-only rankings
+- Existing features it builds on: loyalty points, achievement badges,
+  "Meal-for-a-Meal" donation counter tied to delivery volume
+- Known gaps we're building against: the donation counter can be inflated
+  by any unauthenticated caller (donations.js:59) and points can be
+  double-spent (points.js:82-127), so credible rankings require fixing
+  integrity first; there is no session/token layer, so social features
+  need real identity
+- Stack: React 19 client, Express server, Firestore database
+
+Write three candidate mission statements, five sentences each. Banned
+words: leverage, empower, seamless, revolutionize, cutting-edge,
+innovative, solution. Each candidate must contain one concrete detail a
+rival could not copy-paste. We will pick one and edit it.
+```
+
+### Result
+
+#### Candidate 1 — Trusted Social Competition
+
+Food-delivery rewards are usually solitary, giving customers points and badges without a meaningful way to share their progress with friends. Hungry Wolf will add a friends-only leaderboard that compares customers across loyalty points, earned badges, and verified donation impact. Before publishing any rankings, we will introduce authenticated identities and prevent forged donation increments and concurrent point redemptions. Unlike existing loyalty programs, each Hungry Wolf donation score represents one Meal-for-a-Meal contribution for every ten completed deliveries. This turns isolated rewards into trustworthy social progress while recognizing the customers, restaurants, and delivery partners who produce that impact.
+
+#### Candidate 2 — Community Impact
+
+Customers regularly earn delivery-app rewards, but current programs do not show how their achievements and social contributions compare with those of their friends. Hungry Wolf will connect customers through private friend rankings based on loyalty points, achievement badges, and Meal-for-a-Meal contributions. Every ranking will be calculated from authenticated, server-verified activity so users cannot manufacture points or inflate donation totals. Our distinctive measure converts every ten completed Hungry Wolf deliveries into one donated meal and displays that impact alongside conventional rewards. Customers gain a reason to revisit their achievements, while restaurants and delivery partners can see how completed orders contribute to a larger community benefit.
+
+#### Candidate 3 — Privacy and Choice
+
+Public rankings can expose purchasing habits, while individual reward systems offer no social connection at all. Hungry Wolf will provide an opt-in leaderboard where customers choose accepted friends and compare points, badges, or donation impact without exposing their activity to everyone. A new session and token layer will establish real identity, and Firestore transactions will protect the values used to calculate each rank. No surveyed rival combines friends-only food-delivery rankings with Hungry Wolf's specific rule of one donated meal per ten completed deliveries. The result is social competition that customers can trust, control, and connect to measurable charitable impact.
+
 ## P9 — Milestone reality check
 
 ### Prompt
