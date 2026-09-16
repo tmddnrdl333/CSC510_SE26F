@@ -1,0 +1,10 @@
+Here are three candidate mission statements, strictly following your sentence counts and constraints.
+
+**Candidate 1: Focus on the "Meal-for-a-Meal" and Backend Integrity**
+Food delivery platforms treat gamification as a strictly solitary exercise. We are changing this by introducing a social leaderboard that lets users see exactly where they stand against their friends. Our extension ranks customers by loyalty points, badges earned, and their specific Meal-for-a-Meal donation impact. To ensure these competitive metrics mean something, we are locking down our backend to prevent unauthenticated point inflation and donation spoofing. By transforming isolated ordering into a trusted, shared experience, friends can compete to eat well and give back together.
+
+**Candidate 2: Focus on the Stack and Identity Layer**
+Major apps reward users for ordering, but they offer no way to compare those achievements with peers. Our platform bridges this gap by introducing friend connections and competitive rankings to the food delivery experience. We pull existing Firestore data into a React 19 client to rank friend groups on points, badges, and meals donated. To support this safely, we are building a true session layer to secure identity and validate every earned reward before it hits the board. This creates a verified, socially connected ecosystem where ordering takeout finally feels like a shared, competitive event.
+
+**Candidate 3: Focus on Multi-Dimensional Gamification and the Point Race Bug**
+Most restaurant loyalty programs operate in a vacuum, ignoring the naturally social nature of sharing food. We fix this isolation by letting customers link up with friends to compare their ordering habits in real time. The new dashboard ranks user standing across three distinct dimensions: loyalty points, achievement badges, and the platform-specific Meal-for-a-Meal donation counter. Because a leaderboard demands strict data integrity, we are explicitly patching our points double-spend vulnerability to guarantee fair play. Ultimately, this turns standard gig-economy transactions into a fun, trustworthy competition among friends.

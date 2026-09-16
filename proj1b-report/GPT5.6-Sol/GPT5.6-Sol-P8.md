@@ -1,0 +1,11 @@
+### Candidate 1 — Social competition
+
+Food-delivery rewards are usually a solo experience, giving customers little reason to celebrate progress together. Hungry Wolf connects customers, restaurants, and delivery partners through ordering, rewards, and shared community impact. Our social leaderboard lets customers compare loyalty points, achievement badges, and Meal-for-a-Meal contributions with friends. Every ten delivered orders count toward one donated meal, turning ordinary delivery activity into a concrete measure of collective impact. By grounding every score in authenticated identities and verified transactions, Hungry Wolf makes friendly competition meaningful and credible.
+
+### Candidate 2 — Trust and impact
+
+Competition only matters when people can trust the score and understand what it represents. Hungry Wolf is building a food-delivery community where customers can connect with friends and compare verified progress. The leaderboard ranks loyalty points, badges earned, and Meal-for-a-Meal impact while keeping friend comparisons separate from optional public rankings. Its donation score comes directly from completed deliveries—one donated meal for every ten delivered orders—not from self-reported activity. This gives customers a trustworthy way to turn ordering, achievement, and giving into a shared experience.
+
+### Candidate 3 — Connected food community
+
+Ordering food brings customers, restaurants, and delivery partners together, yet most delivery rewards leave each person playing alone. Hungry Wolf turns its existing points, badges, and Meal-for-a-Meal program into a social experience built around friendly comparison. Customers can add friends, follow their relative standing, and choose whether they appear beyond their friends-only leaderboard. The ranking combines three distinctly Hungry Wolf measures: loyalty points, achievement badges, and donation impact calculated from verified delivered orders. By making progress visible without sacrificing control or score integrity, Hungry Wolf gives every delivery a place in a larger community story.
