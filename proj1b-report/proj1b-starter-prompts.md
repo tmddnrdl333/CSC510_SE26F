@@ -278,8 +278,57 @@ Remember: dull milestones lose marks, impossible ones lose more.
 You are hostile to our proposal. Below: our mission statement, milestones,
 and market survey.
 
-<paste your chosen mission statement from P8, milestones from P9, and the
-market survey table from P1>
+OUR MISSION STATEMENT (chosen from the P8 candidates):
+
+Competition only matters when people can trust the score and understand
+what it represents. Hungry Wolf is building a food-delivery community
+where customers can connect with friends and compare verified progress.
+The leaderboard ranks loyalty points, badges earned, and Meal-for-a-Meal
+impact while keeping friend comparisons separate from optional public
+rankings. Its donation score comes directly from completed deliveries --
+one donated meal for every ten delivered orders -- not from self-reported
+activity. This gives customers a trustworthy way to turn ordering,
+achievement, and giving into a shared experience.
+
+OUR MILESTONES (revised after the four-model P9 review):
+
+1. Minimal JWT session layer first -- register/login issue tokens;
+   middleware protects all new endpoints; gate the unauthenticated
+   donation-counter increment (donations.js:59). Best-effort within this
+   milestone: wrap points redemption in a Firestore transaction
+   (points.js:82-127); if it slips, ship with it documented as a known
+   limitation.
+2. Aggregation API -- per-user score from the points ledger, badge count,
+   and delivered-order count (never the mutable public donation counter).
+3. Friend connections -- send/accept/list only; no suggestions, blocking,
+   or contact import.
+4. Leaderboard screen -- global + friends-only ranking, own row
+   highlighted; privacy enforced by the API, not the client (friends-only
+   by default; global opt-in toggle only if time allows).
+5. E2E + abuse tests -- three seeded users (two friends, one not);
+   friends-only view provably excludes the non-friend; forged-rank
+   attempts rejected; two concurrency tests (simultaneous redemptions,
+   repeated donation/rank writes).
+
+OUR MARKET SURVEY (10 rivals confirmed across three models by the
+two-model rule or a live evidence URL):
+
+| Product | What it shows about our gap |
+|---|---|
+| Starbucks Rewards | Deepest US food/beverage gamification -- entirely solo, no friend ranking |
+| DoorDash challenges | Dominant US delivery app gamifies with solo, time-limited challenges |
+| Uber Eats loyalty | Transactional per-restaurant rewards; verified no customer leaderboard |
+| Chipotle Summer of Extras | Real leaderboards, but seasonal (ended Aug 31, 2026), regional, friendless |
+| Snackpass | Social food ordering (friends' orders, gifts) but no competitive ranking |
+| Beli | Friend leaderboards over restaurant logging, not verified orders |
+| ShareTheMeal Teams | Donation-team leaderboards in an app with no food ordering |
+| Nike Run Club (repr. fitness apps) | The proven friend-leaderboard UX loop -- in fitness, not food |
+| Gameball (repr. loyalty SaaS) | Leaderboard SDKs exist but 4-6 week integration, no friend graph |
+| Grab Rewards Challenges | Non-US delivery gamification -- single-player only |
+
+Gap: no delivery platform ships a persistent, friend-facing leaderboard,
+let alone one ranking loyalty points, badges, and donation impact
+together.
 
 Attack on three fronts:
 1. Nobody wants it — the need is imagined. (Consider: do customers
