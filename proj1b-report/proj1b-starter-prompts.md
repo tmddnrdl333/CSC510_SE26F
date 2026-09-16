@@ -198,8 +198,14 @@ not just what it says."
 Facts about our product:
 - Users: customers, restaurants, delivery partners (gig workers)
 - Problem: delivery apps ship loyalty points and badges, but none we
-  know of lets a customer see how they stack up against friends — the gamification
-  is solitary — [add whatever your P1 survey confirmed here]
+  know of lets a customer see how they stack up against friends — the
+  gamification is solitary. Confirmed by our three-model survey:
+  Starbucks, DoorDash, and Uber Eats all gamify solo (no friend ranking
+  anywhere); Chipotle's Summer of Extras shipped real leaderboards but
+  seasonal, regional, and friendless (ended Aug 31, 2026); Snackpass is
+  social but has no competitive ranking; and ShareTheMeal's donation-team
+  leaderboards live in an app with no food ordering — nobody combines the
+  three ranked dimensions with friends in a delivery app
 - New feature we are building: a social leaderboard that ranks users by
   loyalty points, badges earned, and donation impact, with friend
   connections for friends-only rankings
