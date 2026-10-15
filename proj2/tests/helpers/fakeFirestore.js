@@ -225,12 +225,118 @@ class FakeCollectionRef extends FakeQuery {
   }
 }
 
+// --- Transactions -----------------------------------------------------------
+// Minimal db.runTransaction() mirroring the three real-Firestore behaviors the
+// M3 payout (and M1's redemption fix) depend on:
+//   1. Atomic commit: writes are buffered during the callback and applied
+//      all-or-nothing after it resolves; a thrown callback applies nothing.
+//   2. Isolation: transactions are serialized against each other (a promise
+//      mutex), so a second transaction always sees the first one's committed
+//      state -- this is what makes an exactly-once payout testable. Plain
+//      (non-transactional) get/set/update keep their deliberate OP_DELAY_MS
+//      interleaving window, so the existing race-reproduction tests (UC10,
+//      UC15) are unaffected.
+//   3. Reads-before-writes: real Firestore rejects txn.get() after a buffered
+//      write ("all reads ... before all writes"); the fake enforces the same
+//      so service code that would break on real Firestore fails here too.
+
+function applySyncSet(store, ref, data, opts = {}) {
+  if (!store.has(ref.collectionName)) store.set(ref.collectionName, new Map());
+  const coll = store.get(ref.collectionName);
+  if (opts.merge && coll.has(ref.id)) {
+    coll.set(ref.id, { ...coll.get(ref.id), ...cloneData(data) });
+  } else {
+    coll.set(ref.id, cloneData(data));
+  }
+}
+
+function applySyncUpdate(store, ref, data) {
+  const coll = store.get(ref.collectionName);
+  const updated = cloneData(coll.get(ref.id));
+  for (const [key, value] of Object.entries(data)) {
+    applyDotPath(updated, key, cloneData(value));
+  }
+  coll.set(ref.id, updated);
+}
+
+class FakeTransaction {
+  constructor(store) {
+    this._store = store;
+    this._writes = [];
+  }
+
+  async get(ref) {
+    if (this._writes.length > 0) {
+      throw new Error(
+        'fakeFirestore: transactions require all reads to be executed before all writes'
+      );
+    }
+    if (!(ref instanceof FakeDocRef)) {
+      throw new Error('fakeFirestore: transaction.get() supports document refs only');
+    }
+    return ref.get(); // committed state; txns are serialized so it is consistent
+  }
+
+  set(ref, data, opts = {}) {
+    this._writes.push({ type: 'set', ref, data: cloneData(data), opts });
+    return this;
+  }
+
+  update(ref, data) {
+    this._writes.push({ type: 'update', ref, data: cloneData(data) });
+    return this;
+  }
+
+  delete(ref) {
+    this._writes.push({ type: 'delete', ref });
+    return this;
+  }
+
+  _commit() {
+    // Validate first so the commit is all-or-nothing.
+    for (const w of this._writes) {
+      if (w.type === 'update') {
+        const coll = this._store.get(w.ref.collectionName);
+        if (!coll || !coll.has(w.ref.id)) {
+          const err = new Error(
+            `fakeFirestore: No document to update: ${w.ref.collectionName}/${w.ref.id}`
+          );
+          err.code = 5; // gRPC NOT_FOUND
+          throw err;
+        }
+      }
+    }
+    for (const w of this._writes) {
+      if (w.type === 'set') applySyncSet(this._store, w.ref, w.data, w.opts);
+      else if (w.type === 'update') applySyncUpdate(this._store, w.ref, w.data);
+      else if (w.type === 'delete') {
+        const coll = this._store.get(w.ref.collectionName);
+        if (coll) coll.delete(w.ref.id);
+      }
+    }
+  }
+}
+
 function createFirestoreMock() {
   const store = new Map();
+  let txnChain = Promise.resolve();
 
   const db = {
     collection(name) {
       return new FakeCollectionRef(store, name);
+    },
+    runTransaction(updateFunction) {
+      const run = async () => {
+        await delay();
+        const txn = new FakeTransaction(store);
+        const result = await updateFunction(txn);
+        txn._commit();
+        return result;
+      };
+      // Serialize transactions; a failed one must not break the chain.
+      const result = txnChain.then(run, run);
+      txnChain = result.catch(() => {});
+      return result;
     },
     // Test-only helpers (not part of the real Firestore API surface):
     __reset() {
