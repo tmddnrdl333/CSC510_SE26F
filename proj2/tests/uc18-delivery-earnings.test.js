@@ -5,10 +5,9 @@
 // See proj1a-report/usecases.md UC18 for the two-bookkeeping-systems finding.
 //
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js).
-// The deliver flow's known unrelated bug (User.updateDeliveryStatus is undefined ->
-// 500 AFTER persisting, found by the UC16 suite) is avoided here the same way the
-// UC16 suite does it: the rider is given a second active order so the buggy branch
-// is skipped and delivery completes with 200.
+// /deliver requires the assigned rider's JWT since M1 (tests/helpers/authToken.js).
+// seedBusyWork() dates from before M1 fixed User.updateDeliveryStatus (the 1a
+// "500 after paying" bug found by UC16); it is kept so these numbers stay unchanged.
 
 jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
 
@@ -17,6 +16,7 @@ const { db } = require('../server/config/firebase');
 const deliveryRoutes = require('../server/routes/delivery');
 const { buildApp } = require('./helpers/buildApp');
 const { seedDeliveryFixture } = require('./helpers/deliveryFixtures');
+const { bearer } = require('./helpers/authToken');
 
 // supertest accepts the app object directly — no real TCP listener needed.
 const app = buildApp({ '/api/delivery': deliveryRoutes });
@@ -24,8 +24,7 @@ const app = buildApp({ '/api/delivery': deliveryRoutes });
 describe('UC18: Review my delivery earnings (Delivery partner)', () => {
   beforeEach(() => db.__reset());
 
-  // Keep the rider "busy" so POST /deliver skips the updateDeliveryStatus branch
-  // (delivery.js:270-280) and returns 200 instead of the known unrelated 500.
+  // Give the rider a second active order (see header note).
   function seedBusyWork(riderId) {
     db.__seed('orders', `busy-${riderId}`, {
       customerId: 'cust-x',
@@ -88,11 +87,11 @@ describe('UC18: Review my delivery earnings (Delivery partner)', () => {
     });
     seedBusyWork('rider-A');
 
-    const first = await request(app).post('/api/delivery/deliver/order-1').send({ riderId: riderA.id });
+    const first = await request(app).post('/api/delivery/deliver/order-1').set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
     expect(first.status).toBe(200);
     expect(first.body.earning).toBe(5);
 
-    const second = await request(app).post('/api/delivery/deliver/order-2').send({ riderId: riderA.id });
+    const second = await request(app).post('/api/delivery/deliver/order-2').set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
     expect(second.status).toBe(200);
     expect(second.body.earning).toBe(5);
 
