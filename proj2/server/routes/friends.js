@@ -118,4 +118,30 @@ router.post('/reject', async (req, res) => {
   }
 });
 
+// GET /api/friends/list
+router.get('/list', async (req, res) => {
+  try {
+    const callerId = req.user.id;
+
+    const friendships = await Friendship.listForUser(callerId);
+    const accepted = friendships.filter((f) => f.status === 'accepted');
+
+    const friends = await Promise.all(accepted.map(async (f) => {
+      const otherId = f.userA === callerId ? f.userB : f.userA;
+      const otherUser = await User.findById(otherId);
+      return {
+        userId: otherId,
+        name: otherUser ? otherUser.profile?.name : null,
+        friendshipId: f.id,
+        acceptedAt: f.acceptedAt,
+      };
+    }));
+
+    res.status(200).json({ friends });
+  } catch (error) {
+    console.error('Friend list error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
