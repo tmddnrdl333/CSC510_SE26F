@@ -12,10 +12,10 @@ export const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+    // JWT issued by /auth/login or /auth/register; the server reads the caller's
+    // identity from it (M1 trust layer), including on delivery routes.
     const token = localStorage.getItem('token');
-    // Only add Authorization header for non-delivery routes
-    // Delivery routes don't use token-based auth
-    if (token && !config.url?.includes('/delivery/')) {
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -29,16 +29,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // A 401 means the token is missing, expired or invalid: log out.
+    // (Login itself also 401s on a wrong password, so don't redirect from /login.)
     if (error.response?.status === 401) {
-      // Don't redirect to login for delivery route errors
-      // as they use different authentication
-      if (!error.config?.url?.includes('/delivery/')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        // Only redirect to login if we're not already on the login page
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
