@@ -49,20 +49,6 @@ hungry-wolf/
 
 Live progress, one issue per step: [GitHub milestones](https://github.com/tmddnrdl333/CSC510_SE26F/milestones).
 
-| Milestone | Status |
-|---|---|
-| M0: Repeat-order-rate eval | ✅ Merged ([#11](https://github.com/tmddnrdl333/CSC510_SE26F/pull/11)) |
-| M1: Trust layer | 🔍 In review ([#51](https://github.com/tmddnrdl333/CSC510_SE26F/pull/51)) |
-| M2: Social leaderboard | 🚧 In progress ([#35](https://github.com/tmddnrdl333/CSC510_SE26F/pull/35)) |
-| M3: Challenges engine + friend team challenges | 🚧 In progress |
-
-### M0: Repeat-order-rate eval ✅
-Hypothesis: the weekly repeat-order rate rises by at least 20% with the leaderboard, compared with a no-leaderboard baseline.
-- [x] `scripts/m0-eval.js`: computes the weekly repeat-order rate per group and prints the lift and PASS/FAIL (`npm run eval:m0`)
-- [x] Seeded synthetic order generator, so reruns give the same number. Seed 42: **+24.9% lift → PASS**. The lift is simulated, not hard-coded, so the eval can fail.
-- [x] Runs in CI on every push, and on a pilot dataset (`npm run eval:m0:pilot`)
-- [x] Issue template for recording a persevere / re-plan / descope decision if it fails
-
 ### M1: Trust layer 🔍
 The leaderboard and challenges rank points, deliveries and donations, so those numbers must not be forgeable.
 - [x] Passwords hashed with bcrypt; login returns a JWT; `requireAuth` / `requireRole` middleware ([how to protect a route](docs/CONTRIBUTING.md))
@@ -72,20 +58,6 @@ The leaderboard and challenges rank points, deliveries and donations, so those n
 - [x] Order status follows the kitchen workflow; only the restaurant that owns an order can move it
 - [x] Donation counter and account edits require login
 - [x] 85 new tests (150 → 235 total); tests that recorded these bugs now check the fixes
-
-### M2: Social leaderboard 🚧
-- [x] Friendships: send / accept / reject / list routes and a `getFriends` helper (in review)
-- [ ] Combined score of points, badges and donations
-- [ ] `GET /api/leaderboard`, global and `?scope=friends`
-- [ ] Leaderboard page with a Global/Friends toggle
-
-### M3: Challenges engine + friend team challenges 🚧
-Friends form a team and take on weekly challenges together, e.g. "15 team orders this week = 5 extra donated meals".
-- [x] Challenge definitions and a pure evaluator: a new challenge type is a new definition, not new code
-- [x] Transaction support in the test Firestore double (for exactly-once rewards)
-- [ ] Teams: create / join / leave / list
-- [ ] Exactly-once reward payout, progress API, team progress page
-- [ ] CONTRIBUTING tutorial: how to add a challenge type
 
 ## 🛠️ Tech Stack
 
