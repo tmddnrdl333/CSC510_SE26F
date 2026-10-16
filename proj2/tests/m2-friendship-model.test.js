@@ -127,4 +127,10 @@ describe('Friendship.getFriends', () => {
 
     expect(friends).toEqual([]);
   });
+
+  test('returns an empty array for a user with no friendships at all (#29)', async () => {
+    const friends = await Friendship.getFriends('alice');
+
+    expect(friends).toEqual([]);
+  });
 });
