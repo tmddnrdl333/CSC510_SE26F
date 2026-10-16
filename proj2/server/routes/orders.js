@@ -2,6 +2,9 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { db } = require('../config/firebase');
 const User = require('../models/User');
+const { requireAuth, requireRole } = require('../middleware/auth');
+const { HttpError, sendHttpError } = require('../utils/httpError');
+const { RESTAURANT_SETTABLE_STATUSES, canRestaurantTransition } = require('../../src/orders/statusTransitions');
 
 const router = express.Router();
 
@@ -33,11 +36,12 @@ async function assignRiderToOrder(orderId) {
 router.post('/', [
   body('restaurantId').notEmpty(),
   body('items').isArray({ min: 1 }),
-  body('totalAmount').isNumeric(),
+  // A negative total would mint negative points and corrupt every score built on them (UC6).
+  body('totalAmount').isFloat({ min: 0 }),
   body('deliveryAddress').isObject(),
   body('customerId').notEmpty(),
-  body('tipAmount').optional().isNumeric(),
-  body('deliveryFee').optional().isNumeric()
+  body('tipAmount').optional().isFloat({ min: 0 }),
+  body('deliveryFee').optional().isFloat({ min: 0 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -179,9 +183,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Update order status
-router.put('/:id/status', [
-  body('status').isIn(['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'])
+// Update order status (the order's own restaurant only, along the kitchen
+// workflow in src/orders/statusTransitions.js; delivery statuses are set by
+// /api/delivery so they can't be forged here -- UC12)
+router.put('/:id/status', requireAuth, requireRole(['restaurant']), [
+  body('status').isIn(RESTAURANT_SETTABLE_STATUSES)
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -191,15 +197,27 @@ router.put('/:id/status', [
 
     const { id } = req.params;
     const { status } = req.body;
-
-    // Update order status in Firebase
     const orderRef = db.collection('orders').doc(id);
-    const timestamp = new Date()
-    
-    await orderRef.update({
-      status: status,
-      updatedAt: new Date(),
-      ...(status === 'preparing' ? { confirmedAt: timestamp } : status === 'ready'? { readyAt: timestamp }:{}),
+
+    await db.runTransaction(async (txn) => {
+      const orderDoc = await txn.get(orderRef);
+      if (!orderDoc.exists) {
+        throw new HttpError(404, 'Order not found');
+      }
+      const orderData = orderDoc.data();
+      if (orderData.restaurantId !== req.user.id) {
+        throw new HttpError(403, 'Order does not belong to this restaurant');
+      }
+      if (!canRestaurantTransition(orderData.status, status)) {
+        throw new HttpError(409, `Cannot move an order from ${orderData.status} to ${status}`);
+      }
+
+      const timestamp = new Date();
+      txn.update(orderRef, {
+        status: status,
+        updatedAt: timestamp,
+        ...(status === 'preparing' ? { confirmedAt: timestamp } : status === 'ready' ? { readyAt: timestamp } : {}),
+      });
     });
 
     // When order is marked as ready, it becomes available for riders to accept
@@ -211,6 +229,7 @@ router.put('/:id/status', [
       status: status
     });
   } catch (error) {
+    if (sendHttpError(res, error)) return;
     console.error('Update order status error:', error);
     res.status(500).json({ error: error.message });
   }

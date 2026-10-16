@@ -77,12 +77,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log("Attempting login with:", email);
       const response = await api.post("/auth/login", { email, password });
-      const userData = response.data.user;
+      const { user: userData, token } = response.data;
       console.log("Login successful, user data:", userData);
 
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("token", "dummy-token");
+      localStorage.setItem("token", token); // JWT from the server (M1 trust layer)
     } catch (error: any) {
       console.error("Login error:", error);
       throw new Error(error.response?.data?.error || "Login failed");
@@ -93,11 +93,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: any) => {
     try {
       const response = await api.post("/auth/register", userData);
-      const newUser = response.data.user;
+      const { user: newUser, token } = response.data;
 
       setUser(newUser);
       localStorage.setItem("user", JSON.stringify(newUser));
-      localStorage.setItem("token", "dummy-token");
+      localStorage.setItem("token", token);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Registration failed");
     }

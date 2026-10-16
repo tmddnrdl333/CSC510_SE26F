@@ -117,24 +117,61 @@ describe('UC1: Sign up with a role (New user)', () => {
     expect(res.body.user.profile).toEqual({});
   });
 
-  // --- HEADLINE FINDING (usecases.md UC1 extension 4a) ---
-  // auth.js:31 stores req.body.password verbatim, with the comment "In production, hash this
-  // password". We read the raw persisted document to prove the credential is at rest in cleartext
-  // (toJSON() hides it from API responses, so the API surface alone would not reveal this).
-  test('STAR FINDING: the password is persisted in plaintext (auth.js:29-34, 31)', async () => {
+  // --- HEADLINE FINDING (usecases.md UC1 extension 4a, fixed in M1) ---
+  // 1a: auth.js stored req.body.password verbatim ("In production, hash this password"). M1
+  // hashes with bcrypt before User.create(). We read the raw persisted document because
+  // toJSON() hides the field from API responses.
+  test('FIXED (M1): the password is persisted as a bcrypt hash, never in plaintext (auth.js /register)', async () => {
     await request(server).post('/api/auth/register').send(validCustomer());
 
     const snap = await db.collection('users').where('email', '==', 'newcustomer@example.com').get();
     expect(snap.empty).toBe(false);
-    expect(snap.docs[0].data().password).toBe('supersecret');
+    const stored = snap.docs[0].data().password;
+    expect(stored).not.toContain('supersecret');
+    expect(stored).toMatch(/^\$2[aby]\$10\$/);
   });
 
-  // --- Intentionally-failing "doc expectation" test ---
-  // The STAR FINDING above asserts what the code ACTUALLY does. This asserts what a correct
-  // implementation should do -- the stored credential must be a hash, never the input string --
-  // on purpose, so the defect is a visible red test in `npm test` / CI, not just a comment.
-  // Expected to fail until auth.js hashes the password before User.create().
-  test('[DOC EXPECTATION] the stored password must be hashed, not equal to the submitted value (EXPECTED TO FAIL -- see STAR FINDING above)', async () => {
+  test('M1: register and login both return a JWT for the new account', async () => {
+    const created = await request(server).post('/api/auth/register').send(validCustomer());
+    expect(typeof created.body.token).toBe('string');
+
+    const login = await request(server)
+      .post('/api/auth/login')
+      .send({ email: 'newcustomer@example.com', password: 'supersecret' });
+    expect(login.status).toBe(200);
+    const [, payload] = login.body.token.split('.');
+    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    expect(claims).toMatchObject({ sub: created.body.user.id, role: 'customer' });
+  });
+
+  test('M1: a wrong password is rejected -> 401 and no token is issued', async () => {
+    await request(server).post('/api/auth/register').send(validCustomer());
+
+    const login = await request(server)
+      .post('/api/auth/login')
+      .send({ email: 'newcustomer@example.com', password: 'wrong-password' });
+    expect(login.status).toBe(401);
+    expect(login.body.token).toBeUndefined();
+  });
+
+  test('M1: an account created before M1 (plaintext password) still logs in, and is re-hashed on that login', async () => {
+    db.__seed('users', 'legacy-1', { id: 'legacy-1', email: 'old@example.com', password: 'oldpass', role: 'customer', profile: {} });
+
+    const login = await request(server).post('/api/auth/login').send({ email: 'old@example.com', password: 'oldpass' });
+    expect(login.status).toBe(200);
+    expect(login.body.token).toBeDefined();
+
+    const stored = (await db.collection('users').doc('legacy-1').get()).data().password;
+    expect(stored).toMatch(/^\$2[aby]\$/);
+
+    // and the upgraded hash keeps working
+    const again = await request(server).post('/api/auth/login').send({ email: 'old@example.com', password: 'oldpass' });
+    expect(again.status).toBe(200);
+  });
+
+  // --- "Doc expectation" test from 1a ---
+  // Was intentionally red until M1 hashed the password before User.create().
+  test('[DOC EXPECTATION] the stored password must be hashed, not equal to the submitted value (fixed in M1)', async () => {
     await request(server).post('/api/auth/register').send(validCustomer());
 
     const snap = await db.collection('users').where('email', '==', 'newcustomer@example.com').get();

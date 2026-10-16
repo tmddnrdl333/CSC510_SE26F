@@ -33,6 +33,36 @@ and tips to help you extend the system safely.
 * Use meaningful variable names and follow consistent formatting
 * Keep UI/UX consistent with existing design patterns
 
+## Protecting a Route (M1 trust layer)
+
+Anything that changes points, money, order status or donation numbers must know
+*who* is calling. Use the middleware in `server/middleware/auth.js`; never trust
+an id sent in the request body.
+
+```js
+const { requireAuth, requireRole, rejectIfBodyIdMismatch } = require('../middleware/auth');
+
+router.post('/teams/:id/join', requireAuth, requireRole(['customer']), async (req, res) => {
+  if (rejectIfBodyIdMismatch(req, res, 'customerId')) return; // only if old clients send it
+  const userId = req.user.id; // from the verified JWT
+  // ...
+});
+```
+
+- `requireAuth` → 401 without a valid `Authorization: Bearer <jwt>`; sets `req.user = { id, role, email }`.
+- `requireRole([...])` → 403 for other roles.
+- If a check-then-write could race (balances, claiming, "award once"), do it inside
+  `db.runTransaction()` and throw `HttpError` from `server/utils/httpError.js` to abort
+  with a status code.
+- In tests, get a header with `bearer(id, role)` from `tests/helpers/authToken.js`:
+
+```js
+const { bearer } = require('./helpers/authToken');
+await request(app).post('/api/teams/t1/join').set(bearer('cust-1', 'customer'));
+```
+
+Write a 401 test and a 403 test for every protected route.
+
 ## Reporting Issues
 
 * Use GitHub Issues to report bugs or suggest features
