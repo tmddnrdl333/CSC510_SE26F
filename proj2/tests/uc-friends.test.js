@@ -185,4 +185,39 @@ describe('UC28 (M2): Friendships', () => {
       expect(res.status).toBe(400);
     });
   });
+
+  describe('POST /api/friends/reject', () => {
+    test('main success scenario: the recipient rejects a pending request, deleting it', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+
+      const res = await request(server)
+        .post('/api/friends/reject')
+        .set('x-test-user-id', 'bob')
+        .send({ requestId: pending.id });
+
+      expect(res.status).toBe(200);
+
+      const stored = await Friendship.findById(pending.id);
+      expect(stored).toBeNull();
+    });
+
+    test('extension: the requester cannot reject their own sent request -> 403', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+
+      const res = await request(server)
+        .post('/api/friends/reject')
+        .set('x-test-user-id', 'alice')
+        .send({ requestId: pending.id });
+
+      expect(res.status).toBe(403);
+
+      // request must still exist -- the 403'd call must not have deleted it
+      const stored = await Friendship.findById(pending.id);
+      expect(stored).not.toBeNull();
+    });
+  });
 });
