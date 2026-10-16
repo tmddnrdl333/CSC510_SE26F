@@ -105,6 +105,9 @@ router.post('/reject', async (req, res) => {
     if (callerId !== friendship.userA && callerId !== friendship.userB) {
       return res.status(403).json({ error: 'Not a party to this friendship' });
     }
+    if (friendship.status !== 'pending') {
+      return res.status(400).json({ error: 'Only a pending request can be rejected' });
+    }
     if (friendship.requesterId === callerId) {
       return res.status(403).json({ error: 'The requester cannot reject their own request' });
     }
