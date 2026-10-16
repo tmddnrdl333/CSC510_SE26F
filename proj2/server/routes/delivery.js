@@ -4,6 +4,7 @@ const { db } = require('../config/firebase');
 const User = require('../models/User');
 const { awardPointsForOrder } = require('./points');
 const { updateCustomerBadges } = require('../services/badgeService');
+const { verifyPassword } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ router.post('/profile', [
     const { email, password } = req.body;
     const user = await User.findByEmail(email);
 
-    if (!user || user.password !== password || user.role !== 'delivery') {
+    if (!(await verifyPassword(user, password)) || user.role !== 'delivery') {
       return res.status(401).json({ error: 'Invalid credentials or not a delivery rider' });
     }
 
