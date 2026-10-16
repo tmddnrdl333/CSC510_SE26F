@@ -53,4 +53,39 @@ router.post('/request', async (req, res) => {
   }
 });
 
+// POST /api/friends/accept  { requestId } or { otherUserId }
+router.post('/accept', async (req, res) => {
+  try {
+    const callerId = req.user.id;
+    const { requestId, otherUserId } = req.body;
+
+    const id = requestId || (otherUserId ? Friendship.computeId(callerId, otherUserId) : null);
+    if (!id) {
+      return res.status(400).json({ error: 'requestId or otherUserId required' });
+    }
+
+    const friendship = await Friendship.findById(id);
+    if (!friendship) {
+      return res.status(404).json({ error: 'Friend request not found' });
+    }
+    if (friendship.status === 'accepted') {
+      return res.status(400).json({ error: 'Already accepted' });
+    }
+    // Only the non-requester may accept. (Pre-trust-layer caveat, same as
+    // the rest of this repo: callerId is whatever the x-test-user-id/future
+    // JWT asserts, not independently verified against the friendship's
+    // userA/userB -- see docs/plans/m2-leaderboard.md §3, invariant 5 note.)
+    if (friendship.requesterId === callerId) {
+      return res.status(403).json({ error: 'The requester cannot accept their own request' });
+    }
+
+    await friendship.accept();
+
+    res.status(200).json({ friendship: friendship.toJSON() });
+  } catch (error) {
+    console.error('Friend accept error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
