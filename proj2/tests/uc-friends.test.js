@@ -220,4 +220,59 @@ describe('UC28 (M2): Friendships', () => {
       expect(stored).not.toBeNull();
     });
   });
+
+  describe('GET /api/friends/list', () => {
+    test('main success scenario: merges accepted friendships from both directions', async () => {
+      seedUser('alice');
+      seedUser('bob'); // alice is userA here (alice < bob)
+      seedUser('__ahmed'); // alice is userB here (__ahmed < alice)
+
+      const f1 = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      await f1.accept();
+      const f2 = await Friendship.create({ userA: '__ahmed', userB: 'alice', requesterId: '__ahmed' });
+      await f2.accept();
+
+      const res = await request(server)
+        .get('/api/friends/list')
+        .set('x-test-user-id', 'alice');
+
+      expect(res.status).toBe(200);
+      expect(res.body.friends).toHaveLength(2);
+
+      const ids = res.body.friends.map((f) => f.userId).sort();
+      expect(ids).toEqual(['__ahmed', 'bob']);
+
+      const bobEntry = res.body.friends.find((f) => f.userId === 'bob');
+      expect(bobEntry.name).toBe('bob'); // seedUser sets profile.name = id
+    });
+
+    test('extension: pending friendships are excluded', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      seedUser('zoe');
+
+      const accepted = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      await accepted.accept();
+      await Friendship.create({ userA: 'alice', userB: 'zoe', requesterId: 'zoe' }); // left pending
+
+      const res = await request(server)
+        .get('/api/friends/list')
+        .set('x-test-user-id', 'alice');
+
+      expect(res.status).toBe(200);
+      expect(res.body.friends).toHaveLength(1);
+      expect(res.body.friends[0].userId).toBe('bob');
+    });
+
+    test('extension: a user with no friendships gets an empty list, not an error', async () => {
+      seedUser('alice');
+
+      const res = await request(server)
+        .get('/api/friends/list')
+        .set('x-test-user-id', 'alice');
+
+      expect(res.status).toBe(200);
+      expect(res.body.friends).toEqual([]);
+    });
+  });
 });
