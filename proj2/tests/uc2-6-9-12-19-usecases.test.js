@@ -160,7 +160,9 @@ describe('UC12 — Handle an incoming order', () => {
     }));
 
     const orderRouter = require('../server/routes/orders');
+    const { tokenFor } = require('./helpers/authToken');
     const req = {
+      headers: { authorization: `Bearer ${tokenFor('rest-101', 'restaurant')}` },
       params: { id: 'order-42' },
       body: { status: 'delivered' },
     };

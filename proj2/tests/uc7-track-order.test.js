@@ -14,6 +14,10 @@ const request = require('supertest');
 const { db } = require('../server/config/firebase');
 const orderRoutes = require('../server/routes/orders');
 const { buildApp } = require('./helpers/buildApp');
+const { bearer } = require('./helpers/authToken');
+
+// Since M1, only the order's own restaurant may change its status (seedOrder uses restaurant-1).
+const asRestaurant = bearer('restaurant-1', 'restaurant');
 
 describe('UC7: Track my order (Customer)', () => {
   let server;
@@ -83,12 +87,12 @@ describe('UC7: Track my order (Customer)', () => {
   test('STAR FINDING: moving an order to "confirmed" records no confirmedAt; moving it to "preparing" is what stamps it (orders.js:202)', async () => {
     seedOrder('o1', 'cust-1', 'pending');
 
-    await request(server).put('/api/orders/o1/status').send({ status: 'confirmed' });
+    await request(server).put('/api/orders/o1/status').set(asRestaurant).send({ status: 'confirmed' });
     let res = await request(server).get('/api/orders/customer').query({ customerId: 'cust-1' });
     expect(res.body.orders[0].status).toBe('confirmed');
     expect(res.body.orders[0].confirmedAt).toBeFalsy(); // the "confirmed" transition left no timestamp
 
-    await request(server).put('/api/orders/o1/status').send({ status: 'preparing' });
+    await request(server).put('/api/orders/o1/status').set(asRestaurant).send({ status: 'preparing' });
     res = await request(server).get('/api/orders/customer').query({ customerId: 'cust-1' });
     expect(res.body.orders[0].status).toBe('preparing');
     expect(res.body.orders[0].confirmedAt).toBeTruthy(); // ... but "preparing" does stamp confirmedAt
@@ -112,21 +116,18 @@ describe('UC7: Track my order (Customer)', () => {
     expect(real.body.order.status).toBe('pending'); // not 'delivered'
   });
 
-  // --- FINDING: no transition rules (usecases.md UC7 ext 2b, UC12 ext 3a) ---
-  // orders.js:184 only checks the new status is in an enum; any value is accepted from any state.
-  // orders.js:202 only stamps confirmedAt/readyAt on 'preparing'/'ready'. So an order can land on
-  // 'delivered' with every intermediate milestone missing -- the tracking screen shows "Delivered"
-  // above blank "Confirmed" / "Ready" steps.
-  test('FINDING: an order jumps straight from pending to delivered, and the tracked timeline has no confirmedAt/readyAt (orders.js:184, 202)', async () => {
+  // --- FINDING: no transition rules (usecases.md UC7 ext 2b, UC12 ext 3a) -- fixed in M1 ---
+  // 1a: orders.js:184 only checked the new status was in an enum, so an order could jump from
+  // 'pending' straight to 'delivered' with no confirmedAt/readyAt. M1 restricts this route to the
+  // kitchen workflow (src/orders/statusTransitions.js); 'delivered' is set only by the rider.
+  test('FIXED (M1): an order can no longer jump straight from pending to delivered via the status route -> 400, still pending', async () => {
     seedOrder('o1', 'cust-1', 'pending');
 
-    const put = await request(server).put('/api/orders/o1/status').send({ status: 'delivered' });
-    expect(put.status).toBe(200);
+    const put = await request(server).put('/api/orders/o1/status').set(asRestaurant).send({ status: 'delivered' });
+    expect(put.status).toBe(400);
 
     const res = await request(server).get('/api/orders/customer').query({ customerId: 'cust-1' });
-    expect(res.body.orders[0].status).toBe('delivered');
-    expect(res.body.orders[0].confirmedAt).toBeFalsy();
-    expect(res.body.orders[0].readyAt).toBeFalsy();
+    expect(res.body.orders[0].status).toBe('pending');
   });
 
   // --- Intentionally-failing "doc expectation" test ---
