@@ -88,4 +88,34 @@ router.post('/accept', async (req, res) => {
   }
 });
 
+// POST /api/friends/reject  { requestId }
+router.post('/reject', async (req, res) => {
+  try {
+    const callerId = req.user.id;
+    const { requestId } = req.body;
+
+    if (!requestId) {
+      return res.status(400).json({ error: 'requestId required' });
+    }
+
+    const friendship = await Friendship.findById(requestId);
+    if (!friendship) {
+      // Idempotent: already gone counts as already-handled, not an error.
+      return res.status(404).json({ error: 'Friend request not found' });
+    }
+    // Only the recipient may reject -- same pre-trust-layer caveat as accept
+    // (see docs/plans/m2-leaderboard.md §3, invariant 5 note).
+    if (friendship.requesterId === callerId) {
+      return res.status(403).json({ error: 'The requester cannot reject their own request' });
+    }
+
+    await friendship.delete();
+
+    res.status(200).json({ message: 'Friend request rejected' });
+  } catch (error) {
+    console.error('Friend reject error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
