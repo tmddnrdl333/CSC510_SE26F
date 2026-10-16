@@ -127,4 +127,62 @@ describe('UC28 (M2): Friendships', () => {
       expect(res.status).toBe(401);
     });
   });
+
+  describe('POST /api/friends/accept', () => {
+    test('main success scenario: the non-requester accepts a pending request', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+
+      const res = await request(server)
+        .post('/api/friends/accept')
+        .set('x-test-user-id', 'bob')
+        .send({ requestId: pending.id });
+
+      expect(res.status).toBe(200);
+      expect(res.body.friendship.status).toBe('accepted');
+      expect(res.body.friendship.acceptedAt).not.toBeNull();
+
+      const stored = await Friendship.findById(pending.id);
+      expect(stored.status).toBe('accepted');
+    });
+
+    test('extension: the requester cannot accept their own request -> 403', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+
+      const res = await request(server)
+        .post('/api/friends/accept')
+        .set('x-test-user-id', 'alice')
+        .send({ requestId: pending.id });
+
+      expect(res.status).toBe(403);
+    });
+
+    test('extension: request not found -> 404', async () => {
+      seedUser('bob');
+
+      const res = await request(server)
+        .post('/api/friends/accept')
+        .set('x-test-user-id', 'bob')
+        .send({ requestId: 'nonexistent_id' });
+
+      expect(res.status).toBe(404);
+    });
+
+    test('extension: already accepted -> 400', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      await pending.accept();
+
+      const res = await request(server)
+        .post('/api/friends/accept')
+        .set('x-test-user-id', 'bob')
+        .send({ requestId: pending.id });
+
+      expect(res.status).toBe(400);
+    });
+  });
 });
