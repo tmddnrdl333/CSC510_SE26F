@@ -15,6 +15,7 @@ const request = require('supertest');
 const { db } = require('../server/config/firebase');
 const { router: pointsRoutes } = require('../server/routes/points');
 const { buildApp } = require('./helpers/buildApp');
+const { bearer } = require('./helpers/authToken');
 
 describe('UC10: Redeem points for a discount (Customer)', () => {
   let server;
@@ -44,6 +45,7 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
 
     const res = await request(server)
       .post('/api/points/use')
+      .set(bearer('cust-1', 'customer'))
       .send({ customerId: 'cust-1', points: 200 });
 
     expect(res.status).toBe(200);
@@ -59,16 +61,18 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
   test('extension 2a: points < 1 or non-integer -> 400 (points.js:69)', async () => {
     seedPoints('cust-1', 500);
 
-    const zero = await request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 0 });
+    const zero = await request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 0 });
     expect(zero.status).toBe(400);
 
     const decimal = await request(server)
       .post('/api/points/use')
+      .set(bearer('cust-1', 'customer'))
       .send({ customerId: 'cust-1', points: 12.5 });
     expect(decimal.status).toBe(400);
 
     const negative = await request(server)
       .post('/api/points/use')
+      .set(bearer('cust-1', 'customer'))
       .send({ customerId: 'cust-1', points: -10 });
     expect(negative.status).toBe(400);
   });
@@ -76,7 +80,7 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
   test('extension 3a: insufficient balance -> 400 with available vs. requested points (points.js:92-97)', async () => {
     seedPoints('cust-1', 50);
 
-    const res = await request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 100 });
+    const res = await request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 100 });
     expect(res.status).toBe(400);
     expect(res.body.availablePoints).toBe(50);
     expect(res.body.requestedPoints).toBe(100);
@@ -85,61 +89,87 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
   test('extension 3b: no points record for the customer -> 404 (points.js:85-88)', async () => {
     const res = await request(server)
       .post('/api/points/use')
+      .set(bearer('never-seen-customer', 'customer'))
       .send({ customerId: 'never-seen-customer', points: 10 });
     expect(res.status).toBe(404);
     expect(res.body.error).toMatch(/Points account not found/i);
   });
 
-  // --- HEADLINE FINDING ---
-  // points.js:82-127 reads the points doc, computes new balances/transactions in JS, then calls
-  // pointsRef.update(...) -- with no db.runTransaction() around the read+check+write. Two
-  // concurrent redemption requests against the same account can both read the same starting
-  // balance before either has written back, so both pass the "enough balance?" check.
-  test('STAR FINDING: concurrent redemptions double-spend a balance that should only cover ONE of them (points.js:82-127, no transaction around read-then-update)', async () => {
-    // 100 available points. Two concurrent requests for 60 points each: only one should be
-    // affordable (60 + 60 = 120 > 100).
+  // --- HEADLINE FINDING (fixed in M1) ---
+  // 1a: points.js read the points doc, checked the balance in JS, then update()d with no
+  // transaction, so two concurrent 60-point redemptions against 100 points BOTH got 200
+  // (a double-spend) and one of the two log entries was lost. M1 wraps read+check+write in
+  // db.runTransaction(), so the second request sees the first one's write.
+  test('FIXED (M1): concurrent redemptions are serialized -- one succeeds, the other is refused, both are accounted for (points.js /use, db.runTransaction)', async () => {
     seedPoints('cust-1', 100);
 
     const [resA, resB] = await Promise.all([
-      request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 60 }),
-      request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 60 }),
+      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ points: 60 }),
+      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ points: 60 }),
     ]);
 
+    expect([resA.status, resB.status].sort()).toEqual([200, 400]);
+    const refused = resA.status === 400 ? resA : resB;
+    expect(refused.body.availablePoints).toBe(40); // the loser saw the winner's write
+
     const finalDoc = await db.collection('points').doc('cust-1').get();
-    const finalBalance = finalDoc.data().availablePoints;
-    const usedTransactionCount = finalDoc.data().transactions.filter((t) => t.type === 'used').length;
+    expect(finalDoc.data().availablePoints).toBe(40);
+    expect(finalDoc.data().usedPoints).toBe(60);
+    expect(finalDoc.data().transactions.filter((t) => t.type === 'used')).toHaveLength(1);
+  });
 
-    // ACTUAL observed behavior (this is the bug, not a flaky race -- rerun this test as many
-    // times as you like, the 15ms mock delay makes the overlap deterministic):
-    //
-    //   - BOTH requests receive HTTP 200 "success" responses. The customer's client-visible
-    //     experience is that 120 points' worth of discount ($1.20) was granted off a 100-point
-    //     ($1.00) balance -- this is the double-spend.
-    //   - The final stored `availablePoints` lands at 40, not below zero. This is a nuance worth
-    //     calling out explicitly: both requests independently compute `100 - 60 = 40` from the
-    //     SAME stale read (neither observes the other's write), so whichever update() commits
-    //     last simply overwrites the field with 40 again -- a classic lost-update anomaly, not a
-    //     cumulative decrement. Because each request's own insufficiency check is only ever
-    //     evaluated against its own single points figure vs. its own stale read, this specific
-    //     bug pattern (full-field overwrite, no increment/decrement) can never drive the stored
-    //     balance negative for any set of concurrent requests -- it can only land on one of the
-    //     individually-"valid" post-redemption values. The task brief's framing ("balance goes
-    //     negative, or both redemptions are logged") anticipated two possible symptoms; what
-    //     actually reproduces here is a third: both succeed, but the transaction log undercounts.
-    //   - Only ONE "used" transaction ends up in the persisted history, not two. Both requests
-    //     read `transactions: []`, so each independently computes a length-1 replacement array
-    //     containing only its own entry; the update() overwrites the whole `transactions` field
-    //     rather than appending, so whichever write lands last erases the other's transaction
-    //     record from the audit trail. The redemption still happened (the customer got their
-    //     discount and a 200) -- there's just no evidence of it afterward.
-    expect([resA.status, resB.status]).toEqual([200, 200]); // both succeed -- this is the double-spend
-    expect(finalBalance).toBe(40);
-    expect(usedTransactionCount).toBe(1); // one of the two redemptions vanished from the log
+  test('FIXED (M1): three concurrent redemptions that each fit but together overspend -- the balance never goes below what was actually granted', async () => {
+    seedPoints('cust-1', 100);
 
-    // Sanity check on the actual harm: sum of what both responses told the customer they
-    // redeemed exceeds the 100-point balance that was supposed to cap total redemptions.
-    const totalPointsClaimedRedeemed = resA.body.pointsUsed + resB.body.pointsUsed;
-    expect(totalPointsClaimedRedeemed).toBe(120); // > 100 available -- the double-spend, quantified
+    const results = await Promise.all(
+      [40, 40, 40].map((points) =>
+        request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ points })
+      )
+    );
+
+    const granted = results.filter((r) => r.status === 200).length;
+    expect(granted).toBe(2); // 40 + 40 = 80 <= 100; the third would overspend
+    const finalDoc = await db.collection('points').doc('cust-1').get();
+    expect(finalDoc.data().availablePoints).toBe(20);
+    expect(finalDoc.data().transactions.filter((t) => t.type === 'used')).toHaveLength(2);
+  });
+
+  // --- M1 auth: identity comes from the token, not the body ---
+  test('M1: redeeming without a token -> 401, balance untouched', async () => {
+    seedPoints('cust-1', 500);
+    const res = await request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 100 });
+    expect(res.status).toBe(401);
+    const doc = await db.collection('points').doc('cust-1').get();
+    expect(doc.data().availablePoints).toBe(500);
+  });
+
+  test("M1: a logged-in customer cannot spend someone else's points by naming them in the body -> 403", async () => {
+    seedPoints('victim', 500);
+    const res = await request(server)
+      .post('/api/points/use')
+      .set(bearer('attacker', 'customer'))
+      .send({ customerId: 'victim', points: 100 });
+    expect(res.status).toBe(403);
+    const doc = await db.collection('points').doc('victim').get();
+    expect(doc.data().availablePoints).toBe(500);
+  });
+
+  test('M1: a non-customer role cannot redeem points -> 403', async () => {
+    seedPoints('rider-A', 500);
+    const res = await request(server)
+      .post('/api/points/use')
+      .set(bearer('rider-A', 'delivery'))
+      .send({ points: 100 });
+    expect(res.status).toBe(403);
+  });
+
+  test('M1: a forged token (wrong signature) -> 401', async () => {
+    seedPoints('cust-1', 500);
+    const res = await request(server)
+      .post('/api/points/use')
+      .set({ Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjdXN0LTEiLCJyb2xlIjoiY3VzdG9tZXIifQ.bad' })
+      .send({ points: 100 });
+    expect(res.status).toBe(401);
   });
 
   // POST /calculate-discount shares /use's balance-check logic but is meant as a pure preview
@@ -195,18 +225,14 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
   // jsdom/@testing-library runner in proj2/client works for router-free components, as
   // uc5-build-cart.test.tsx later proved. Exercising Cart.tsx that way remains open work.)
 
-  // --- Intentionally-failing "doc expectation" test ---
-  // The STAR FINDING test above asserts what the code ACTUALLY does (both requests succeed).
-  // This one instead asserts the correct, expected behavior implied by usecases.md's redemption
-  // flow -- a balance that can only cover one of two concurrent requests should let exactly one
-  // through -- on purpose, so this is a visible red test in `npm test` / CI, not just a comment.
-  // Expected to fail until points.js:82-127 gets a real transaction around read-then-update.
-  test('[DOC EXPECTATION] concurrent redemptions must not exceed the available balance (EXPECTED TO FAIL -- see STAR FINDING above for the real behavior)', async () => {
+  // --- "Doc expectation" test from 1a ---
+  // Was intentionally red until M1 put a transaction around read-then-update; now green.
+  test('[DOC EXPECTATION] concurrent redemptions must not exceed the available balance (fixed in M1)', async () => {
     seedPoints('cust-1', 100);
 
     const [resA, resB] = await Promise.all([
-      request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 60 }),
-      request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 60 }),
+      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 60 }),
+      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 60 }),
     ]);
 
     const successCount = [resA, resB].filter((r) => r.status === 200).length;
