@@ -68,13 +68,12 @@ router.post('/accept', async (req, res) => {
     if (!friendship) {
       return res.status(404).json({ error: 'Friend request not found' });
     }
+    if (callerId !== friendship.userA && callerId !== friendship.userB) {
+      return res.status(403).json({ error: 'Not a party to this friendship' });
+    }
     if (friendship.status === 'accepted') {
       return res.status(400).json({ error: 'Already accepted' });
     }
-    // Only the non-requester may accept. (Pre-trust-layer caveat, same as
-    // the rest of this repo: callerId is whatever the x-test-user-id/future
-    // JWT asserts, not independently verified against the friendship's
-    // userA/userB -- see docs/plans/m2-leaderboard.md §3, invariant 5 note.)
     if (friendship.requesterId === callerId) {
       return res.status(403).json({ error: 'The requester cannot accept their own request' });
     }
@@ -103,8 +102,9 @@ router.post('/reject', async (req, res) => {
       // Idempotent: already gone counts as already-handled, not an error.
       return res.status(404).json({ error: 'Friend request not found' });
     }
-    // Only the recipient may reject -- same pre-trust-layer caveat as accept
-    // (see docs/plans/m2-leaderboard.md §3, invariant 5 note).
+    if (callerId !== friendship.userA && callerId !== friendship.userB) {
+      return res.status(403).json({ error: 'Not a party to this friendship' });
+    }
     if (friendship.requesterId === callerId) {
       return res.status(403).json({ error: 'The requester cannot reject their own request' });
     }
