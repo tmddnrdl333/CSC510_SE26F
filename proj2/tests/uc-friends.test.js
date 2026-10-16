@@ -255,6 +255,24 @@ describe('UC28 (M2): Friendships', () => {
       expect(stored).not.toBeNull();
       expect(stored.status).toBe('pending');
     });
+
+    test('extension: rejecting an already-accepted friendship -> 400, doc still exists', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      const accepted = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      await accepted.accept();
+
+      const res = await request(server)
+        .post('/api/friends/reject')
+        .set('x-test-user-id', 'bob') // the recipient -- would otherwise be allowed to reject
+        .send({ requestId: accepted.id });
+
+      expect(res.status).toBe(400);
+
+      const stored = await Friendship.findById(accepted.id);
+      expect(stored).not.toBeNull();
+      expect(stored.status).toBe('accepted');
+    });
   });
 
   describe('GET /api/friends/list', () => {
