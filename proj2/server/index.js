@@ -14,6 +14,8 @@ const badgeRoutes = require('./routes/badges');
 const donationRoutes = require('./routes/donations');
 const voiceRoutes = require('./routes/voice');
 const users = require("./routes/users");
+const friendsRoutes = require('./routes/friends');
+const { authStub } = require('./middleware/authStub'); // TEMPORARY -- see that file; replaced by M1's real auth
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -41,6 +43,7 @@ app.use('/api/donations', donationRoutes);
 app.use('/api/badges', badgeRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use("/api/users", users);
+app.use('/api/friends', authStub, friendsRoutes); // authStub is temporary -- see server/middleware/authStub.js
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
