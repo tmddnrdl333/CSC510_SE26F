@@ -184,6 +184,24 @@ describe('UC28 (M2): Friendships', () => {
 
       expect(res.status).toBe(400);
     });
+
+    test('extension: a caller who is neither userA nor userB -> 403, doc unchanged', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      seedUser('carol');
+      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+
+      const res = await request(server)
+        .post('/api/friends/accept')
+        .set('x-test-user-id', 'carol')
+        .send({ requestId: pending.id });
+
+      expect(res.status).toBe(403);
+
+      const stored = await Friendship.findById(pending.id);
+      expect(stored.status).toBe('pending');
+      expect(stored.acceptedAt).toBeNull();
+    });
   });
 
   describe('POST /api/friends/reject', () => {
@@ -218,6 +236,24 @@ describe('UC28 (M2): Friendships', () => {
       // request must still exist -- the 403'd call must not have deleted it
       const stored = await Friendship.findById(pending.id);
       expect(stored).not.toBeNull();
+    });
+
+    test('extension: a caller who is neither userA nor userB -> 403, doc unchanged', async () => {
+      seedUser('alice');
+      seedUser('bob');
+      seedUser('carol');
+      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+
+      const res = await request(server)
+        .post('/api/friends/reject')
+        .set('x-test-user-id', 'carol')
+        .send({ requestId: pending.id });
+
+      expect(res.status).toBe(403);
+
+      const stored = await Friendship.findById(pending.id);
+      expect(stored).not.toBeNull();
+      expect(stored.status).toBe('pending');
     });
   });
 
