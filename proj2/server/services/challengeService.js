@@ -8,9 +8,20 @@
 //     (`${definitionId}_${teamId}_${weekKey}`), so concurrent claim attempts
 //     collide on the same document and the transaction serializes them —
 //     the same discipline that fixed the 1a points double-spend.
+//   - If a progress doc already exists (e.g. created 'active' by the progress
+//     API), its stored `target` is the authoritative goal — the terms at
+//     creation survive later definition changes (design doc §2.3) — and its
+//     other fields are preserved (merge write).
+//
+// Precedence: an already-rewarded claim returns `alreadyRewarded` even if the
+// supplied orders no longer evaluate as achieved (statuses can be flipped back
+// while transitions are unguarded — invariant 6), so a replay never surfaces
+// a confusing NOT_ACHIEVED for a challenge that was in fact paid.
 //
 // This module is service-layer only: no express, no auth. Routes (#16) sit on
-// top and map the thrown `error.code` values to HTTP statuses.
+// top, MUST fetch `orders`/`memberIds` server-side and derive `weekKey`
+// server-side (caller-supplied values would make "achieved" forgeable), and
+// map the thrown `error.code` values to HTTP statuses.
 
 const { db } = require('../config/firebase');
 const { challengeDefinitions } = require('../../src/challenges/challengeDefinitions');
@@ -28,42 +39,51 @@ function codedError(code, message) {
 /**
  * Claims the reward for one (challenge, team, week) — at most once, ever.
  *
- * The caller supplies the raw orders (any status/customer; the evaluator
- * filters), typically the current week's orders for the team's members.
- *
  * @returns {Promise<{rewarded: boolean, alreadyRewarded: boolean,
  *                    progressId: string, reward: Object, rewardRef: ?string}>}
- * @throws {Error} code 'UNKNOWN_CHALLENGE' | 'NOT_ACHIEVED' |
- *                 'REWARD_TYPE_NOT_IMPLEMENTED'
+ * @throws {Error} code 'UNKNOWN_CHALLENGE' | 'INVALID_REWARD' |
+ *                 'REWARD_TYPE_NOT_IMPLEMENTED' | 'NOT_ACHIEVED'
  */
-async function claimChallengeReward({ definitionId, teamId, weekKey, memberIds, orders }) {
-  const definition = challengeDefinitions.find((d) => d.id === definitionId);
+async function claimChallengeReward({
+  definitionId,
+  teamId,
+  weekKey,
+  memberIds,
+  orders,
+  definitions = challengeDefinitions,
+}) {
+  const definition = definitions.find((d) => d.id === definitionId);
   if (!definition) {
     throw codedError('UNKNOWN_CHALLENGE', `Unknown challenge definition "${definitionId}"`);
   }
 
-  // Derive progress with the pure evaluator — never from stored state.
+  // Badge-type rewards are wired in #17; refuse loudly rather than marking a
+  // reward paid without granting anything.
+  if (!definition.reward || definition.reward.type !== 'donatedMeals') {
+    throw codedError(
+      'REWARD_TYPE_NOT_IMPLEMENTED',
+      `Reward type "${definition.reward && definition.reward.type}" is not implemented yet (see issue #17)`
+    );
+  }
+  // Definitions are added without touching this service ("definition-only"
+  // extensibility), so a malformed amount must not reach the global counter.
+  const rewardAmount = Number(definition.reward.amount);
+  if (!Number.isInteger(rewardAmount) || rewardAmount <= 0) {
+    throw codedError(
+      'INVALID_REWARD',
+      `Definition "${definitionId}" has an invalid reward.amount (${definition.reward.amount})`
+    );
+  }
+
+  // Derive progress with the pure evaluator — never from stored state. The
+  // achievement *decision* happens inside the transaction, where the stored
+  // target (if any) is authoritative.
   const [evaluation] = evaluateChallenges({
     orders,
     memberIds,
     weekKey,
     definitions: [definition],
   });
-  if (!evaluation.achieved) {
-    throw codedError(
-      'NOT_ACHIEVED',
-      `Challenge "${definitionId}" is at ${evaluation.progress}/${evaluation.target} for ${weekKey} — not achieved`
-    );
-  }
-
-  // Badge-type rewards are wired in #17; refuse loudly rather than marking a
-  // reward paid without granting anything.
-  if (definition.reward.type !== 'donatedMeals') {
-    throw codedError(
-      'REWARD_TYPE_NOT_IMPLEMENTED',
-      `Reward type "${definition.reward.type}" is not implemented yet (see issue #17)`
-    );
-  }
 
   const progressId = buildChallengeProgressId(definitionId, teamId, weekKey);
   const progressRef = db.collection('challengeProgress').doc(progressId);
@@ -74,39 +94,52 @@ async function claimChallengeReward({ definitionId, teamId, weekKey, memberIds, 
 
   return db.runTransaction(async (txn) => {
     const progressDoc = await txn.get(progressRef);
-    if (progressDoc.exists && progressDoc.data().status === 'rewarded') {
+    const existing = progressDoc.exists ? progressDoc.data() : null;
+
+    if (existing && existing.status === 'rewarded') {
       return {
         rewarded: false,
         alreadyRewarded: true,
         progressId,
-        reward: definition.reward,
-        rewardRef: progressDoc.data().rewardRef || null,
+        reward: { ...definition.reward },
+        rewardRef: existing.rewardRef || null,
       };
+    }
+
+    const storedTarget = existing ? Number(existing.target) : NaN;
+    const effectiveTarget =
+      Number.isFinite(storedTarget) && storedTarget > 0 ? storedTarget : evaluation.target;
+    if (evaluation.progress < effectiveTarget) {
+      throw codedError(
+        'NOT_ACHIEVED',
+        `Challenge "${definitionId}" is at ${evaluation.progress}/${effectiveTarget} for ${weekKey} — not achieved`
+      );
     }
 
     const counterDoc = await txn.get(counterRef);
     const currentCounter = counterDoc.exists ? (counterDoc.data().counter || 0) : 0;
     const now = new Date();
 
+    // merge: preserve createdAt and any fields the progress API stored.
     txn.set(progressRef, {
       id: progressId,
       definitionId,
       teamId,
       weekKey,
-      target: evaluation.target,
+      target: effectiveTarget,
       status: 'rewarded',
       rewardedAt: now,
       rewardRef: auditId,
-      createdAt: progressDoc.exists ? progressDoc.data().createdAt : now,
       updatedAt: now,
-    });
+      ...(existing ? {} : { createdAt: now }),
+    }, { merge: true });
     txn.set(counterRef, {
-      counter: currentCounter + definition.reward.amount,
+      counter: currentCounter + rewardAmount,
       lastUpdated: now,
     }, { merge: true });
     txn.set(auditRef, {
       id: auditId,
-      amount: definition.reward.amount,
+      amount: rewardAmount,
       description: `Team challenge reward: ${definition.label} (${teamId}, ${weekKey})`,
       challengeProgressId: progressId,
       createdAt: now,
@@ -116,7 +149,7 @@ async function claimChallengeReward({ definitionId, teamId, weekKey, memberIds, 
       rewarded: true,
       alreadyRewarded: false,
       progressId,
-      reward: definition.reward,
+      reward: { ...definition.reward },
       rewardRef: auditId,
     };
   });

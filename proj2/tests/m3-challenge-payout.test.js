@@ -130,6 +130,67 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
       .rejects.toMatchObject({ code: 'UNKNOWN_CHALLENGE' });
   });
 
+  test('pre-existing active doc: createdAt/extra fields preserved, stored (lower) target honored', async () => {
+    const progressId = `weekly-team-orders-15_${TEAM}_${WEEK}`;
+    db.__seed('challengeProgress', progressId, {
+      id: progressId,
+      status: 'active',
+      target: 3, // terms at creation — lower than the definition's current 15
+      createdAt: '2026-10-01T00:00:00.000Z',
+      note: 'created by the progress API',
+    });
+
+    // Only 5 delivered orders: meets the stored target (3), NOT the current
+    // definition target (15) — the stored terms must win (design doc §2.3).
+    const result = await claim({ orders: achievingOrders().slice(0, 5) });
+    expect(result.rewarded).toBe(true);
+
+    const progress = await db.collection('challengeProgress').doc(progressId).get();
+    expect(progress.data().status).toBe('rewarded');
+    expect(progress.data().target).toBe(3); // not clobbered to 15
+    expect(progress.data().createdAt).toBe('2026-10-01T00:00:00.000Z'); // preserved
+    expect(progress.data().note).toBe('created by the progress API'); // merge keeps extras
+
+    const counter = await db.collection('settings').doc('donations').get();
+    expect(counter.data().counter).toBe(105); // still exactly one payout
+  });
+
+  test('pre-existing active doc: stored (higher) target is honored too', async () => {
+    const progressId = `weekly-team-orders-15_${TEAM}_${WEEK}`;
+    db.__seed('challengeProgress', progressId, { id: progressId, status: 'active', target: 999 });
+
+    await expect(claim()).rejects.toMatchObject({ code: 'NOT_ACHIEVED' });
+
+    const progress = await db.collection('challengeProgress').doc(progressId).get();
+    expect(progress.data().status).toBe('active'); // untouched
+    const counter = await db.collection('settings').doc('donations').get();
+    expect(counter.data().counter).toBe(100);
+  });
+
+  test('replay after orders no longer achieve -> alreadyRewarded, not NOT_ACHIEVED', async () => {
+    await claim();
+    // Statuses can be flipped back while transitions are unguarded; a replay
+    // of a paid claim must say "already rewarded", not surface a false error.
+    const replay = await claim({ orders: [] });
+    expect(replay).toMatchObject({ rewarded: false, alreadyRewarded: true });
+  });
+
+  test('a donatedMeals definition with a bad amount -> INVALID_REWARD, counter untouched', async () => {
+    const bad = {
+      id: 'bad-amount',
+      label: 'Bad',
+      scope: 'team',
+      period: 'weekly',
+      metric: 'teamDeliveredOrders',
+      target: 1,
+      reward: { type: 'donatedMeals' }, // amount missing -> would make counter NaN
+    };
+    await expect(claim({ definitionId: 'bad-amount', definitions: [bad] }))
+      .rejects.toMatchObject({ code: 'INVALID_REWARD' });
+    const counter = await db.collection('settings').doc('donations').get();
+    expect(counter.data().counter).toBe(100);
+  });
+
   test('badge-type reward refuses loudly until #17 wires it', async () => {
     // weekly-whole-squad needs 3 distinct ordering members and pays a badge.
     await expect(claim({ definitionId: 'weekly-whole-squad', orders: [
