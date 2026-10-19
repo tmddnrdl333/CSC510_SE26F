@@ -18,6 +18,15 @@ api.interceptors.request.use(
     if (token && !config.url?.includes('/delivery/')) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // TEMPORARY (M1): friends/teams/challenges sit behind the x-test-user-id
+    // auth stub (server/middleware/authStub.js) until the JWT middleware from
+    // M1 merges. Remove this block together with the stub.
+    if (/\/(friends|teams|challenges)(\/|$)/.test(config.url || '')) {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        if (storedUser?.id) config.headers['x-test-user-id'] = storedUser.id;
+      } catch { /* ignore malformed localStorage */ }
+    }
     return config;
   },
   (error) => {
