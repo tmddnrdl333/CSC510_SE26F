@@ -5,6 +5,7 @@
 
 const {
   computeScore,
+  rankUsers,
   POINTS_WEIGHT,
   BADGE_TIER_WEIGHT,
   DONATED_MEAL_WEIGHT,
@@ -47,5 +48,51 @@ describe('computeScore', () => {
 
   test('donatedMeals term floors, not rounds (fewer than 10 delivered orders contributes 0)', () => {
     expect(computeScore({ deliveredOrderCount: DELIVERED_ORDERS_PER_DONATED_MEAL - 1 })).toBe(0);
+  });
+});
+
+describe('rankUsers', () => {
+  test('orders by score descending and assigns sequential ranks', () => {
+    const ranked = rankUsers([
+      { userId: 'low', totalPoints: 5 },
+      { userId: 'high', totalPoints: 50 },
+      { userId: 'mid', totalPoints: 20 },
+    ]);
+
+    expect(ranked.map((u) => u.userId)).toEqual(['high', 'mid', 'low']);
+    expect(ranked.map((u) => u.rank)).toEqual([1, 2, 3]);
+    expect(ranked.map((u) => u.score)).toEqual([50, 20, 5]);
+  });
+
+  test('ties break deterministically by ascending userId, with distinct sequential ranks', () => {
+    const ranked = rankUsers([
+      { userId: 'charlie', totalPoints: 10 },
+      { userId: 'alice', totalPoints: 10 },
+      { userId: 'bob', totalPoints: 10 },
+    ]);
+
+    expect(ranked.map((u) => u.userId)).toEqual(['alice', 'bob', 'charlie']);
+    expect(ranked.map((u) => u.rank)).toEqual([1, 2, 3]);
+
+    // deterministic across repeated calls / input orderings
+    const rankedAgain = rankUsers([
+      { userId: 'bob', totalPoints: 10 },
+      { userId: 'charlie', totalPoints: 10 },
+      { userId: 'alice', totalPoints: 10 },
+    ]);
+    expect(rankedAgain.map((u) => u.userId)).toEqual(['alice', 'bob', 'charlie']);
+  });
+
+  test('empty list returns an empty array', () => {
+    expect(rankUsers([])).toEqual([]);
+    expect(rankUsers()).toEqual([]);
+  });
+
+  test('a single user is ranked 1', () => {
+    const ranked = rankUsers([{ userId: 'solo', totalPoints: 5, badgeTiers: 2 }]);
+
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0].rank).toBe(1);
+    expect(ranked[0].score).toBe(POINTS_WEIGHT * 5 + BADGE_TIER_WEIGHT * 2);
   });
 });
