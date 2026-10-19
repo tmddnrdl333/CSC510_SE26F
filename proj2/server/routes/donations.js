@@ -1,5 +1,6 @@
 const express = require('express');
 const { db } = require('../config/firebase');
+const { challengeDefinitions } = require('../../src/challenges/challengeDefinitions');
 
 const router = express.Router();
 
@@ -28,9 +29,28 @@ router.get('/stats', async (req, res) => {
       });
     }
 
+    // Challenge-donated meals (#64): derived from the challengeProgress
+    // ledger, which is written ONLY by the exactly-once payout transaction —
+    // deliberately NOT from the stored settings counter, which POST /update
+    // still lets any caller inflate until #36's deletion lands (the UC20 star
+    // finding). Deriving from the tamper-proof ledger keeps the public number
+    // honest either way.
+    const rewardedSnap = await db.collection('challengeProgress')
+      .where('status', '==', 'rewarded')
+      .get();
+    let challengeBonusMeals = 0;
+    rewardedSnap.forEach((doc) => {
+      const definition = challengeDefinitions.find((d) => d.id === doc.data().definitionId);
+      if (definition && definition.reward && definition.reward.type === 'donatedMeals') {
+        challengeBonusMeals += Number(definition.reward.amount) || 0;
+      }
+    });
+
     res.json({
       totalOrders: totalDeliveredOrders,
-      mealsDonated: mealsDonated,
+      mealsDonated: mealsDonated + challengeBonusMeals,
+      derivedMeals: mealsDonated,
+      challengeBonusMeals,
       nextDonationIn: 10 - (totalDeliveredOrders % 10)
     });
   } catch (error) {
