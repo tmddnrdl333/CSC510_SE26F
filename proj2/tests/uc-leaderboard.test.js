@@ -96,6 +96,41 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
 
     expect(res.status).toBe(401);
   });
+
+  // Issue #55: awardPointsForOrder (server/routes/points.js, the real
+  // order-completion path) and GET /api/points (the dashboard) both write/read
+  // db.collection('points').doc(customerId) directly, with NO `userId` field --
+  // confirmed against M1's branch (origin/Liwen-M1, commit 1561cb7), which kept
+  // this same addressing scheme. The loader instead uses Points.findByUserId(),
+  // which queries by a `userId` field no real points doc ever has. This test
+  // writes points exactly the way awardPointsForOrder does and should FAIL
+  // until the loader is fixed to match.
+  test('BUG (#55): points written the way awardPointsForOrder writes them are invisible to the leaderboard', async () => {
+    db.__seed('users', 'dave', {
+      id: 'dave',
+      email: 'dave@example.com',
+      password: 'pw',
+      role: 'customer',
+      profile: { name: 'Dave' },
+    });
+    // Exactly awardPointsForOrder's write shape: doc id = customerId, no
+    // `userId` field anywhere on the doc.
+    db.__seed('points', 'dave', {
+      totalPoints: 77,
+      availablePoints: 77,
+      usedPoints: 0,
+      transactions: [],
+    });
+
+    const res = await request(server)
+      .get('/api/leaderboard')
+      .set('x-test-user-id', 'dave');
+
+    expect(res.status).toBe(200);
+    const daveEntry = res.body.entries.find((e) => e.userId === 'dave');
+    expect(daveEntry).toBeDefined();
+    expect(daveEntry.points).toBe(77);
+  });
 });
 
 describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
