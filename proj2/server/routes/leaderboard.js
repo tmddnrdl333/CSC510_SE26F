@@ -7,6 +7,7 @@ const express = require('express');
 const { db } = require('../config/firebase');
 const { rankUsers, DELIVERED_ORDERS_PER_DONATED_MEAL } = require('../services/leaderboardService');
 const { loadUserScoreDataForIds } = require('../services/leaderboardDataLoader');
+const Friendship = require('../models/Friendship');
 
 const router = express.Router();
 
@@ -47,24 +48,35 @@ async function hydrateEntries(rankedUsers) {
   }));
 }
 
-// GET /api/leaderboard?limit=
+// Loads, ranks, caps at `limit`, and hydrates the board for a given set of
+// user ids -- shared by both scopes below.
+async function buildEntries(userIds, limit) {
+  const rawData = await loadUserScoreDataForIds(userIds);
+  const ranked = rankUsers(rawData).slice(0, limit);
+  return hydrateEntries(ranked);
+}
+
+// GET /api/leaderboard?limit=&scope=
 // Global board: live computation over every customer (design doc invariant
 // 8's cached top-K snapshot is explicitly deferred -- see plan doc §8, a
 // known limit carried into Project 3).
+// ?scope=friends: caller (req.user.id) plus their accepted friends
+// (Friendship.getFriends, #29) only -- bounded by friend count, so this
+// path is naive/live even once the global board eventually gets a cache.
 router.get('/', async (req, res) => {
   try {
+    const callerId = req.user.id;
     const scope = req.query.scope === 'friends' ? 'friends' : 'global';
     const limit = parseLimit(req.query.limit);
 
     if (scope === 'friends') {
-      // Implemented in a later piece of issue #31.
-      return res.status(501).json({ error: 'scope=friends not yet implemented' });
+      const friendIds = await Friendship.getFriends(callerId);
+      const entries = await buildEntries([callerId, ...friendIds], limit);
+      return res.status(200).json({ scope: 'friends', entries });
     }
 
     const userIds = await getAllCustomerIds();
-    const rawData = await loadUserScoreDataForIds(userIds);
-    const ranked = rankUsers(rawData).slice(0, limit);
-    const entries = await hydrateEntries(ranked);
+    const entries = await buildEntries(userIds, limit);
 
     res.status(200).json({ scope: 'global', entries });
   } catch (error) {
