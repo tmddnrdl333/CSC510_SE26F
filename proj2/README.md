@@ -1,14 +1,26 @@
-<!-- CI/CD and quality badges -->
-[![Build Status](https://github.com/yashvinshah/SE_2025_projects/actions/workflows/ci.yml/badge.svg)](https://github.com/yashvinshah/SE_2025_projects/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/github/yashvinshah/SE_2025_projects/graph/badge.svg?token=4FG9EPMKX0)](https://codecov.io/github/yashvinshah/SE_2025_projects)
-[![ESLint](https://img.shields.io/badge/code_style-ESLint-blue.svg)](https://eslint.org/)
+<!-- CI/CD and quality badges (live — each click opens the real result) -->
+[![Build Status](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml/badge.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-329%20passing%20%2B%204%20documented%20reds-brightgreen.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/tmddnrdl333/CSC510_SE26F/graph/badge.svg)](https://codecov.io/github/tmddnrdl333/CSC510_SE26F)
+[![ESLint](https://img.shields.io/badge/lint-ESLint-blue.svg)](.eslintrc.json)
+[![Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](.prettierrc)
+[![TypeScript](https://img.shields.io/badge/types-tsc%20--noEmit-3178c6.svg)](client/tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](docs/LICENSE.md)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](docs/CONTRIBUTING.md)
+<!-- TODO(DOI): after linking this repo on Zenodo and cutting a GitHub release,
+     replace this comment with the Zenodo DOI badge it gives you:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
+
+<!-- TODO(teaser): 12-30s teaser video goes RIGHT HERE, above the title. -->
 
 # Hungry Wolf 🐺
 **Not Just Food, A Quest Worth Savoring**
 
 A gamified food-delivery platform that connects customers, restaurants, and delivery partners while supporting local eateries and contributing to a Meal-for-a-Meal donation program.
+
+**Docs & guides:** [API docs (generated)](docs/api/index.html) · [Install](docs/INSTALL.md) · [Contributing / adding a challenge type](docs/CONTRIBUTING.md) · [Milestones](docs/MILESTONES.md) · [DB design](docs/DB_DESIGN_M2_M3.md) · [AI use disclosure](docs/AI_USE.md) · [Third-party licenses](docs/THIRD_PARTY_LIBRARIES.md)
+
+<!-- TODO(walkthrough): link the 2-5 min feature walk-through video here. -->
 
 ## 🎯 Project Overview
 

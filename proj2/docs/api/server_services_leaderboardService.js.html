@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: server/services/leaderboardService.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: server/services/leaderboardService.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// server/services/leaderboardService.js
+// Pure score/ranking functions for M2 (issue #30). No Firestore access here
+// -- callers fetch points/badges/order data and pass plain values in.
+// Formula + rationale: proj2/docs/plans/m2-leaderboard.md §6.
+
+// Named so they're easy to retune (see §6's "Update (issue #30, following
+// #51)" note -- these have already been retuned once, for M1's actual
+// points scale, and are expected to move again).
+const POINTS_WEIGHT = 1;
+const BADGE_TIER_WEIGHT = 2;
+const DONATED_MEAL_WEIGHT = 5;
+
+// Meal-for-a-Meal rule (routes/donations.js:15): 1 meal per 10 delivered orders.
+const DELIVERED_ORDERS_PER_DONATED_MEAL = 10;
+
+/**
+ * Combined leaderboard score for one user.
+ * score = POINTS_WEIGHT * totalPoints
+ *       + BADGE_TIER_WEIGHT * badgeTiers
+ *       + DONATED_MEAL_WEIGHT * floor(deliveredOrderCount / DELIVERED_ORDERS_PER_DONATED_MEAL)
+ *
+ * Pure function: no Firestore access, no I/O. Missing/undefined
+ * totalPoints, badgeTiers, or deliveredOrderCount are treated as 0.
+ *
+ * @param {{ totalPoints?: number, badgeTiers?: number, deliveredOrderCount?: number }} user
+ * @returns {number}
+ */
+function computeScore(user = {}) {
+  const totalPoints = user.totalPoints || 0;
+  const badgeTiers = user.badgeTiers || 0;
+  const deliveredOrderCount = user.deliveredOrderCount || 0;
+  const donatedMeals = Math.floor(deliveredOrderCount / DELIVERED_ORDERS_PER_DONATED_MEAL);
+
+  return (
+    POINTS_WEIGHT * totalPoints +
+    BADGE_TIER_WEIGHT * badgeTiers +
+    DONATED_MEAL_WEIGHT * donatedMeals
+  );
+}
+
+/**
+ * Ranks users by computeScore(), descending, with a deterministic tie-break
+ * (ascending userId) so equal scores always come out in the same order.
+ * Pure function: no Firestore access, no I/O. Does not mutate its input;
+ * returns new objects with `score` and `rank` (1-indexed) attached.
+ *
+ * Every element of `users` must have a `userId` -- that's the identity
+ * ranking is keyed on, unlike the computeScore fields (which default to 0
+ * when missing).
+ *
+ * @param {Array&lt;{ userId: string, totalPoints?: number, badgeTiers?: number, deliveredOrderCount?: number }>} users
+ * @returns {Array&lt;object>} same shape as input, plus `score` and `rank`, sorted
+ */
+function rankUsers(users = []) {
+  return users
+    .map((user) => ({ ...user, score: computeScore(user) }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return String(a.userId).localeCompare(String(b.userId));
+    })
+    .map((user, index) => ({ ...user, rank: index + 1 }));
+}
+
+module.exports = {
+  computeScore,
+  rankUsers,
+  POINTS_WEIGHT,
+  BADGE_TIER_WEIGHT,
+  DONATED_MEAL_WEIGHT,
+  DELIVERED_ORDERS_PER_DONATED_MEAL,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Friendship.html">Friendship</a></li></ul><h3>Global</h3><ul><li><a href="global.html#RESTAURANT_SETTABLE_STATUSES">RESTAURANT_SETTABLE_STATUSES</a></li><li><a href="global.html#buildChallengeProgressId">buildChallengeProgressId</a></li><li><a href="global.html#buildEntries">buildEntries</a></li><li><a href="global.html#canRestaurantTransition">canRestaurantTransition</a></li><li><a href="global.html#claimChallengeReward">claimChallengeReward</a></li><li><a href="global.html#computeOrderPoints">computeOrderPoints</a></li><li><a href="global.html#computeScore">computeScore</a></li><li><a href="global.html#countDeliveredOrders">countDeliveredOrders</a></li><li><a href="global.html#evaluateChallenges">evaluateChallenges</a></li><li><a href="global.html#filterTeamWeekOrders">filterTeamWeekOrders</a></li><li><a href="global.html#getAllCustomerIds">getAllCustomerIds</a></li><li><a href="global.html#hashPassword">hashPassword</a></li><li><a href="global.html#hydrateEntries">hydrateEntries</a></li><li><a href="global.html#isHashed">isHashed</a></li><li><a href="global.html#loadTeamContext">loadTeamContext</a></li><li><a href="global.html#loadUserScoreData">loadUserScoreData</a></li><li><a href="global.html#loadUserScoreDataForIds">loadUserScoreDataForIds</a></li><li><a href="global.html#parseLimit">parseLimit</a></li><li><a href="global.html#rankUsers">rankUsers</a></li><li><a href="global.html#rejectIfBodyIdMismatch">rejectIfBodyIdMismatch</a></li><li><a href="global.html#signToken">signToken</a></li><li><a href="global.html#sumBadgeTiers">sumBadgeTiers</a></li><li><a href="global.html#verifyPassword">verifyPassword</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Oct 19 2026 17:05:16 GMT-0400 (Eastern Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: server/services/leaderboardDataLoader.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: server/services/leaderboardDataLoader.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// server/services/leaderboardDataLoader.js
+// Firestore I/O for the leaderboard (issue #31). Gathers the raw per-user
+// inputs that server/services/leaderboardService.js's computeScore() needs
+// -- that file stays pure/Firestore-free per
+// proj2/docs/plans/m2-leaderboard.md §5's implementation map, so the I/O
+// lives here instead.
+//
+// Reads the users doc directly (not via models/User.js) for the badges
+// snapshot: User's constructor doesn't expose a `badges` field even though
+// server/services/badgeService.js writes badges/badgesStats directly onto
+// the same doc (server/services/badgeService.js:17-25), bypassing the User
+// model -- so User.findById(id).badges would silently be undefined.
+//
+// Also reads the points doc directly (not via models/Points.js) for the same
+// reason: models/Points.js (getOrCreate/findByUserId) uses an auto-generated
+// doc id plus a `userId` field, queried via `.where('userId','==',...)`. The
+// REAL points-awarding path -- awardPointsForOrder in server/routes/points.js,
+// and GET /api/points (the dashboard) -- both read/write
+// db.collection('points').doc(customerId) directly and never set a `userId`
+// field. Confirmed against M1's branch (origin/Liwen-M1, commit 1561cb7),
+// which kept this same addressing scheme when it changed the points formula.
+// Using Points.findByUserId() here meant this loader could never see real,
+// production-earned points for any user (issue #55). models/Points.js's
+// scheme is the odd one out and should not be used for reading points here.
+const { db } = require('../config/firebase');
+
+const TIER_RANK = { bronze: 1, silver: 2, gold: 3, diamond: 4 };
+
+/**
+ * Sum of tier levels across a user's `badges` snapshot (0-4 per badge, 18
+ * badges -> 0-72 range). A missing/stale snapshot, or a badge entry with no
+ * tier yet, counts as 0 -- per design doc invariant 9, not a synchronous
+ * recompute on this path.
+ *
+ * @param {object|null|undefined} badgesSnapshot - `users.&lt;id>.badges`, keyed
+ *   by badge id -> `{ currentTier, progress, nextTierThreshold, lastUpdatedAt }`.
+ * @returns {number}
+ */
+function sumBadgeTiers(badgesSnapshot) {
+  if (!badgesSnapshot) return 0;
+  return Object.values(badgesSnapshot).reduce((total, badge) => {
+    const tier = badge &amp;&amp; badge.currentTier;
+    return total + (TIER_RANK[tier] || 0);
+  }, 0);
+}
+
+/**
+ * Counts a customer's delivered orders (feeds the donatedMeals term of the
+ * score formula via `floor(count / 10)`, computed in leaderboardService.js).
+ *
+ * @param {string} userId
+ * @returns {Promise&lt;number>}
+ */
+async function countDeliveredOrders(userId) {
+  const snapshot = await db
+    .collection('orders')
+    .where('customerId', '==', userId)
+    .where('status', '==', 'delivered')
+    .get();
+  return snapshot.size;
+}
+
+/**
+ * Loads the raw score inputs (totalPoints, badgeTiers, deliveredOrderCount)
+ * for one user id, for server/services/leaderboardService.js's
+ * computeScore()/rankUsers(). A missing points doc, missing badges
+ * snapshot, or zero matching orders all resolve to 0 -- never an error.
+ *
+ * @param {string} userId
+ * @returns {Promise&lt;{ userId: string, totalPoints: number, badgeTiers: number, deliveredOrderCount: number }>}
+ */
+async function loadUserScoreData(userId) {
+  const [userDoc, pointsDoc, deliveredOrderCount] = await Promise.all([
+    db.collection('users').doc(userId).get(),
+    db.collection('points').doc(userId).get(),
+    countDeliveredOrders(userId),
+  ]);
+
+  const badgesSnapshot = userDoc.exists ? userDoc.data().badges : null;
+
+  return {
+    userId,
+    totalPoints: pointsDoc.exists ? (pointsDoc.data().totalPoints || 0) : 0,
+    badgeTiers: sumBadgeTiers(badgesSnapshot),
+    deliveredOrderCount,
+  };
+}
+
+/**
+ * Same as loadUserScoreData, for a list of user ids, run concurrently.
+ *
+ * @param {string[]} userIds
+ * @returns {Promise&lt;Array&lt;ReturnType&lt;typeof loadUserScoreData>>>}
+ */
+async function loadUserScoreDataForIds(userIds) {
+  return Promise.all(userIds.map((userId) => loadUserScoreData(userId)));
+}
+
+module.exports = {
+  loadUserScoreData,
+  loadUserScoreDataForIds,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Friendship.html">Friendship</a></li></ul><h3>Global</h3><ul><li><a href="global.html#RESTAURANT_SETTABLE_STATUSES">RESTAURANT_SETTABLE_STATUSES</a></li><li><a href="global.html#buildChallengeProgressId">buildChallengeProgressId</a></li><li><a href="global.html#buildEntries">buildEntries</a></li><li><a href="global.html#canRestaurantTransition">canRestaurantTransition</a></li><li><a href="global.html#claimChallengeReward">claimChallengeReward</a></li><li><a href="global.html#computeOrderPoints">computeOrderPoints</a></li><li><a href="global.html#computeScore">computeScore</a></li><li><a href="global.html#countDeliveredOrders">countDeliveredOrders</a></li><li><a href="global.html#evaluateChallenges">evaluateChallenges</a></li><li><a href="global.html#filterTeamWeekOrders">filterTeamWeekOrders</a></li><li><a href="global.html#getAllCustomerIds">getAllCustomerIds</a></li><li><a href="global.html#hashPassword">hashPassword</a></li><li><a href="global.html#hydrateEntries">hydrateEntries</a></li><li><a href="global.html#isHashed">isHashed</a></li><li><a href="global.html#loadTeamContext">loadTeamContext</a></li><li><a href="global.html#loadUserScoreData">loadUserScoreData</a></li><li><a href="global.html#loadUserScoreDataForIds">loadUserScoreDataForIds</a></li><li><a href="global.html#parseLimit">parseLimit</a></li><li><a href="global.html#rankUsers">rankUsers</a></li><li><a href="global.html#rejectIfBodyIdMismatch">rejectIfBodyIdMismatch</a></li><li><a href="global.html#signToken">signToken</a></li><li><a href="global.html#sumBadgeTiers">sumBadgeTiers</a></li><li><a href="global.html#verifyPassword">verifyPassword</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Oct 19 2026 17:05:16 GMT-0400 (Eastern Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
