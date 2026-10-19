@@ -375,17 +375,9 @@ Get donation statistics.
 }
 ```
 
-#### POST /donations/update
-Update donation counter.
-
-**Auth:** required (M1). `mealsToAdd` must be a positive integer.
-
-**Request Body:**
-```json
-{
-  "mealsToAdd": 1
-}
-```
+#### ~~POST /donations/update~~ (removed in M1)
+Removed in #75 (decided in #36). It let any caller bump the stored donation counter by any
+amount, and nothing used it. Donated meals are derived in `GET /donations/stats`. Calls now return 404.
 
 #### POST /donations/record
 Record a donation entry.
