@@ -38,8 +38,32 @@ function computeScore(user = {}) {
   );
 }
 
+/**
+ * Ranks users by computeScore(), descending, with a deterministic tie-break
+ * (ascending userId) so equal scores always come out in the same order.
+ * Pure function: no Firestore access, no I/O. Does not mutate its input;
+ * returns new objects with `score` and `rank` (1-indexed) attached.
+ *
+ * Every element of `users` must have a `userId` -- that's the identity
+ * ranking is keyed on, unlike the computeScore fields (which default to 0
+ * when missing).
+ *
+ * @param {Array<{ userId: string, totalPoints?: number, badgeTiers?: number, deliveredOrderCount?: number }>} users
+ * @returns {Array<object>} same shape as input, plus `score` and `rank`, sorted
+ */
+function rankUsers(users = []) {
+  return users
+    .map((user) => ({ ...user, score: computeScore(user) }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return String(a.userId).localeCompare(String(b.userId));
+    })
+    .map((user, index) => ({ ...user, rank: index + 1 }));
+}
+
 module.exports = {
   computeScore,
+  rankUsers,
   POINTS_WEIGHT,
   BADGE_TIER_WEIGHT,
   DONATED_MEAL_WEIGHT,
