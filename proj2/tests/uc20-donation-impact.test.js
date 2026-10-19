@@ -141,4 +141,34 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
     expect(res.body.history[0].id).toBe('d2'); // most recently created, listed first
     expect(res.body.history[1].id).toBe('d1');
   });
+
+  test('regression #64: challenge-donated meals appear in the public stat', async () => {
+    // Bonus meals derive from the challengeProgress ledger (written only by
+    // the exactly-once payout transaction) — never from the inflatable
+    // settings counter.
+    seedDeliveredOrders(25); // derived: floor(25/10) = 2
+    db.__seed('challengeProgress', 'weekly-team-orders-15_t1_2026-W43', {
+      definitionId: 'weekly-team-orders-15', status: 'rewarded', // +5 meals
+    });
+    db.__seed('challengeProgress', 'weekly-whole-squad_t1_2026-W43', {
+      definitionId: 'weekly-whole-squad', status: 'rewarded', // badge, +0 meals
+    });
+    db.__seed('challengeProgress', 'weekly-team-spend-300_t1_2026-W43', {
+      definitionId: 'weekly-team-spend-300', status: 'active', // unrewarded, +0
+    });
+
+    const res = await request(server).get('/api/donations/stats');
+    expect(res.status).toBe(200);
+    expect(res.body.derivedMeals).toBe(2);
+    expect(res.body.challengeBonusMeals).toBe(5);
+    expect(res.body.mealsDonated).toBe(7);
+  });
+
+  test('regression #64: an inflated settings counter still cannot leak into the public stat', async () => {
+    seedDeliveredOrders(10); // derived: 1
+    db.__seed('settings', 'donations', { counter: 999999999 });
+
+    const res = await request(server).get('/api/donations/stats');
+    expect(res.body.mealsDonated).toBe(1); // tamper-proof: ledger-derived only
+  });
 });

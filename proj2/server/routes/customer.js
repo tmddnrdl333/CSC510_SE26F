@@ -153,7 +153,6 @@ router.get("/restaurants", async (req, res) => {
 
     console.log("Found restaurants:", restaurants.length);
     res.json({ restaurants });
-    console.log(restaurants[1].location);
   } catch (error) {
     console.error("Get restaurants error:", error.message);
     res.status(500).json({

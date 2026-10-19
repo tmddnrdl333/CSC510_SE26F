@@ -3,9 +3,11 @@ import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Cart from '../components/customer/Cart';
 import CustomerHome from '../components/customer/CustomerHome';
+import Leaderboard from '../components/customer/Leaderboard';
 import Orders from '../components/customer/Orders';
 import Profile from '../components/customer/Profile';
 import RestaurantList from '../components/customer/RestaurantList';
+import TeamChallenges from '../components/customer/TeamChallenges';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceCommandManager from '../features/voice/components/VoiceCommandManager';
 import { api } from '../services/api';
@@ -60,7 +62,9 @@ const CustomerDashboard: React.FC = () => {
           <Route path="/restaurants" element={<RestaurantList />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/team" element={<TeamChallenges />} />
         </Routes>
       </div>
       

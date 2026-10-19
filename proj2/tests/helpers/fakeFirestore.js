@@ -123,6 +123,13 @@ class FakeDocRef {
     coll.set(this.id, updated);
     return {};
   }
+
+  async delete() {
+    await delay();
+    const coll = this._collectionMap();
+    coll.delete(this.id);
+    return {};
+  }
 }
 
 class FakeQuery {

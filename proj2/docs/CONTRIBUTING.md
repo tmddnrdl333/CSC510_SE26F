@@ -63,6 +63,59 @@ await request(app).post('/api/teams/t1/join').set(bearer('cust-1', 'customer'));
 
 Write a 401 test and a 403 test for every protected route.
 
+## Adding a Challenge Type (M3 Challenge Engine)
+
+A new challenge type is a **definition object, not code**. The engine
+(`src/challenges/evaluateChallenges.js`) is generic; every challenge is a
+declarative entry in `src/challenges/challengeDefinitions.js`:
+
+```js
+{
+  id: 'weekly-team-orders-3',          // unique slug; becomes part of the
+                                       // challengeProgress doc id
+  label: 'Warm-up Week',
+  description: 'Three team orders this week.',
+  icon: '🥉',
+  scope: 'team',                       // v1 supports team challenges
+  period: 'weekly',                    // ISO week, UTC
+  metric: 'teamDeliveredOrders',       // see "metrics" below
+  target: 3,                           // goal the metric must reach (>=)
+  reward: { type: 'donatedMeals', amount: 1 },
+}
+```
+
+Add the object to the array — done. The list API (`GET /api/challenges`),
+the claim route, progress bars, and the exactly-once payout all pick it up
+with **zero engine changes**. This is proven by a test you can copy:
+`proj2/tests/m3-challenge-evaluator.test.js`, test
+*"a NEW challenge type works by adding a definition object — no evaluator
+change"* — it injects a brand-new definition and watches it evaluate.
+
+**Available metrics** (the honest extensibility boundary): a definition may
+use any metric in `metricSelectors` (`src/challenges/evaluateChallenges.js`):
+
+* `teamDeliveredOrders` — count of the team's delivered orders in the week
+* `teamDeliveredSpend` — sum of their `totalAmount`
+* `uniqueActiveMembers` — distinct members who ordered
+
+A genuinely **new metric** needs one selector function added to
+`metricSelectors` — that is the only code a new measurement ever requires
+(same pattern as `src/badges/`).
+
+**Reward types**: `{ type: 'donatedMeals', amount: n }` adds n meals to the
+global Meal-for-a-Meal counter, exactly once per (challenge, team, week),
+inside a Firestore transaction with a deterministic audit row
+(`server/services/challengeService.js`). A definition with a malformed
+amount is rejected (`INVALID_REWARD`) before it can touch the counter.
+
+**Checklist for a new challenge type:**
+
+1. Add the definition object (reuse an existing metric if possible)
+2. Run `npx jest tests/m3-challenge-evaluator.test.js tests/m3-challenge-payout.test.js tests/m3-challenge-api.test.js`
+3. If you added a metric: one selector + a unit test for it
+4. No route, service, or UI changes should be necessary — if they are,
+   stop and ask why
+
 ## Reporting Issues
 
 * Use GitHub Issues to report bugs or suggest features
