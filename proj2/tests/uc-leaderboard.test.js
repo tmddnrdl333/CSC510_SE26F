@@ -8,7 +8,8 @@ jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').
 const request = require('supertest');
 const express = require('express');
 const { db } = require('../server/config/firebase');
-const { authStub } = require('../server/middleware/authStub');
+const { bearer } = require('./helpers/authToken');
+const { requireAuth } = require('../server/middleware/auth');
 const leaderboardRoutes = require('../server/routes/leaderboard');
 const Friendship = require('../server/models/Friendship');
 
@@ -34,7 +35,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
   beforeAll(() => {
     const app = express();
     app.use(express.json());
-    app.use('/api/leaderboard', authStub, leaderboardRoutes);
+    app.use('/api/leaderboard', requireAuth, leaderboardRoutes);
     server = app.listen(0);
   });
 
@@ -49,7 +50,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
 
     const res = await request(server)
       .get('/api/leaderboard')
-      .set('x-test-user-id', 'alice');
+      .set(bearer('alice', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.scope).toBe('global');
@@ -66,7 +67,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
     const res = await request(server)
       .get('/api/leaderboard')
       .query({ limit: 2 })
-      .set('x-test-user-id', 'alice');
+      .set(bearer('alice', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.entries).toHaveLength(2);
@@ -80,7 +81,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
 
     const res = await request(server)
       .get('/api/leaderboard')
-      .set('x-test-user-id', 'customer-0');
+      .set(bearer('customer-0', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.entries).toHaveLength(20);
@@ -89,7 +90,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
     expect(res.body.entries[19].userId).toBe('customer-19');
   });
 
-  test('extension: no x-test-user-id header -> 401', async () => {
+  test('extension: no auth token -> 401', async () => {
     const res = await request(server).get('/api/leaderboard');
 
     expect(res.status).toBe(401);
@@ -122,7 +123,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
 
     const res = await request(server)
       .get('/api/leaderboard')
-      .set('x-test-user-id', 'dave');
+      .set(bearer('dave', 'customer'));
 
     expect(res.status).toBe(200);
     const daveEntry = res.body.entries.find((e) => e.userId === 'dave');
@@ -137,7 +138,7 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
   beforeAll(() => {
     const app = express();
     app.use(express.json());
-    app.use('/api/leaderboard', authStub, leaderboardRoutes);
+    app.use('/api/leaderboard', requireAuth, leaderboardRoutes);
     server = app.listen(0);
   });
 
@@ -156,7 +157,7 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
     const res = await request(server)
       .get('/api/leaderboard')
       .query({ scope: 'friends' })
-      .set('x-test-user-id', 'alice');
+      .set(bearer('alice', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.scope).toBe('friends');
@@ -173,7 +174,7 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
     const res = await request(server)
       .get('/api/leaderboard')
       .query({ scope: 'friends' })
-      .set('x-test-user-id', 'alice');
+      .set(bearer('alice', 'customer'));
 
     expect(res.status).toBe(200);
     const aliceEntry = res.body.entries.find((e) => e.userId === 'alice');
@@ -187,7 +188,7 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
     const res = await request(server)
       .get('/api/leaderboard')
       .query({ scope: 'friends' })
-      .set('x-test-user-id', 'alice');
+      .set(bearer('alice', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.entries).toHaveLength(1);
@@ -202,7 +203,7 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
     const res = await request(server)
       .get('/api/leaderboard')
       .query({ scope: 'friends' })
-      .set('x-test-user-id', 'alice');
+      .set(bearer('alice', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.entries).toHaveLength(1);

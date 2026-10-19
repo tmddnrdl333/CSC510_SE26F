@@ -10,8 +10,7 @@
 //   - Join rule (M2 dependency): the caller must have an ACCEPTED friendship
 //     with the team owner, checked via the deterministic friendship doc id.
 //
-// Caller identity comes from req.user.id (temporary authStub today, M1's
-// requireAuth after it merges) — never from the body.
+// Caller identity comes from req.user.id (requireAuth) — never from the body.
 //
 // v1 scope per the issue: create / join / leave / list ("me"). No invites, no
 // member removal by the owner, no ownership transfer. The owner may leave

@@ -1,7 +1,7 @@
 // server/routes/leaderboard.js
 // Contract: proj2/docs/plans/m2-leaderboard.md §5.
-// Caller identity comes from req.user.id, set upstream by the temporary
-// auth stub (server/middleware/authStub.js) mounted ahead of this router in
+// Caller identity comes from req.user.id, set upstream by M1's requireAuth
+// middleware (server/middleware/auth.js)
 // server/index.js -- same as server/routes/friends.js.
 const express = require('express');
 const { db } = require('../config/firebase');
