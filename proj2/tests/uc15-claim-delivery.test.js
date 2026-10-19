@@ -14,6 +14,7 @@ const { db } = require('../server/config/firebase');
 const deliveryRoutes = require('../server/routes/delivery');
 const { buildApp } = require('./helpers/buildApp');
 const { seedDeliveryFixture } = require('./helpers/deliveryFixtures');
+const { bearer } = require('./helpers/authToken');
 
 describe('UC15: Claim a delivery job (Delivery partner)', () => {
   let server;
@@ -32,6 +33,7 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
     const res = await request(server)
       .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
       .send({ riderId: riderA.id });
 
     expect(res.status).toBe(200);
@@ -50,11 +52,13 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
     const first = await request(server)
       .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
       .send({ riderId: riderA.id });
     expect(first.status).toBe(200);
 
     const second = await request(server)
       .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderB.id, 'delivery'))
       .send({ riderId: riderB.id });
     expect(second.status).toBe(409);
 
@@ -67,6 +71,7 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
     const res = await request(server)
       .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
       .send({ riderId: riderA.id });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/not ready/i);
@@ -77,6 +82,7 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
     const res = await request(server)
       .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer('no-such-rider', 'delivery'))
       .send({ riderId: 'no-such-rider' });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/rider not found/i);
@@ -92,45 +98,68 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
     const res = await request(server)
       .post('/api/delivery/accept/order-2')
+      .set(bearer(riderA.id, 'delivery'))
       .send({ riderId: riderA.id });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/already have an active order/i);
   });
 
-  // --- Race condition ---
-  // Same class of bug as UC10: the accept handler does `get() -> check -> update()` with no
-  // db.runTransaction() around it (delivery.js:100-146). Two partners racing for the same order
-  // can both read `deliveryPartnerId: null` / `status: 'ready'` before either has written back.
-  test('RACE CONDITION: two partners concurrently claim the same ready order -- at most one may end up assigned', async () => {
+  // --- Race condition (fixed in M1) ---
+  // 1a: the accept handler did `get() -> check -> update()` with no transaction, so two partners
+  // racing for the same order BOTH got 200 "Order accepted" (last write won the assignment).
+  // M1 does the check-and-claim inside db.runTransaction(), so the loser sees the winner's claim.
+  test('FIXED (M1): two partners concurrently claim the same ready order -- exactly one 200, the other 409', async () => {
     const { riderA, riderB, orderId } = seedDeliveryFixture(db);
 
     const [resA, resB] = await Promise.all([
-      request(server).post(`/api/delivery/accept/${orderId}`).send({ riderId: riderA.id }),
-      request(server).post(`/api/delivery/accept/${orderId}`).send({ riderId: riderB.id }),
+      request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id }),
+      request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderB.id, 'delivery')).send({ riderId: riderB.id }),
     ]);
 
+    expect([resA.status, resB.status].sort()).toEqual([200, 409]);
+    const winner = resA.status === 200 ? riderA.id : riderB.id;
     const finalOrder = await db.collection('orders').doc(orderId).get();
+    expect(finalOrder.data().deliveryPartnerId).toBe(winner);
+  });
 
-    console.log('UC15 race repro:', {
-      statusA: resA.status,
-      statusB: resB.status,
-      finalDeliveryPartnerId: finalOrder.data().deliveryPartnerId,
-    });
+  // --- M1 auth ---
+  test('M1: accepting without a token -> 401, order stays unassigned', async () => {
+    const { riderA, orderId } = seedDeliveryFixture(db);
+    const res = await request(server).post(`/api/delivery/accept/${orderId}`).send({ riderId: riderA.id });
+    expect(res.status).toBe(401);
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    expect(orderDoc.data().deliveryPartnerId).toBeNull();
+  });
 
-    // ACTUAL observed behavior (deterministic across repeated runs, not a flaky race): because
-    // both requests' reads overlap before either writes (delivery.js:100-146 has no
-    // db.runTransaction()), BOTH requests pass the "not yet assigned" check and BOTH call
-    // orderRef.update(...), so BOTH receive HTTP 200 "Order accepted successfully". This
-    // contradicts usecases.md extension 2a's "another partner got it first -> 409" and the task
-    // brief's "confirm exactly one gets a success response and the other gets a 409, with no
-    // scenario where both succeed" -- that outcome only holds when the second request's read is
-    // late enough to observe the first request's write. Storage still only names one final
-    // winner (last-write-wins on `deliveryPartnerId`), so the order isn't double-assigned in the
-    // database -- but for a window, BOTH partners' apps were told they'd won the same job, which
-    // is exactly the inconsistency a 409 response exists to prevent.
-    expect(resA.status).toBe(200);
-    expect(resB.status).toBe(200); // per the doc/brief this "should" be 409 -- it is not
-    expect(['rider-A', 'rider-B']).toContain(finalOrder.data().deliveryPartnerId);
+  test('M1: a customer token cannot accept delivery jobs -> 403', async () => {
+    const { orderId } = seedDeliveryFixture(db);
+    const res = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer('customer-1', 'customer')).send({});
+    expect(res.status).toBe(403);
+  });
+
+  test("M1: a rider cannot claim a job in another rider's name (body riderId must match the token) -> 403", async () => {
+    const { riderA, riderB, orderId } = seedDeliveryFixture(db);
+    const res = await request(server)
+      .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderB.id, 'delivery'))
+      .send({ riderId: riderA.id });
+    expect(res.status).toBe(403);
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    expect(orderDoc.data().deliveryPartnerId).toBeNull();
+  });
+
+  test('M1: the token alone is enough -- no riderId in the body still claims the job for the logged-in rider', async () => {
+    const { riderA, orderId } = seedDeliveryFixture(db);
+    const res = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({});
+    expect(res.status).toBe(200);
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    expect(orderDoc.data().deliveryPartnerId).toBe(riderA.id);
+  });
+
+  test('accepting an order that does not exist -> 404', async () => {
+    const { riderA } = seedDeliveryFixture(db);
+    const res = await request(server).post('/api/delivery/accept/no-such-order').set(bearer(riderA.id, 'delivery')).send({});
+    expect(res.status).toBe(404);
   });
 
   test('main scenario step 1: GET /available lists only ready, unassigned orders (delivery.js:299-331)', async () => {
@@ -148,10 +177,10 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
   test('extension 2e: POST /reject releases a claimed order back to ready/unassigned (delivery.js:164-191)', async () => {
     const { riderA, orderId } = seedDeliveryFixture(db);
-    const claimRes = await request(server).post(`/api/delivery/accept/${orderId}`).send({ riderId: riderA.id });
+    const claimRes = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
     expect(claimRes.status).toBe(200);
 
-    const res = await request(server).post(`/api/delivery/reject/${orderId}`).send({ riderId: riderA.id });
+    const res = await request(server).post(`/api/delivery/reject/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
     expect(res.status).toBe(200);
 
     const orderDoc = await db.collection('orders').doc(orderId).get();
@@ -159,20 +188,27 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
     expect(orderDoc.data().deliveryPartnerId).toBeNull();
   });
 
-  // Found while adding the /reject coverage above: like /accept, this handler never checks that
-  // the caller is the partner actually assigned to the order (same class of gap as UC16's
-  // headline finding, just applied to un-claiming instead of completing).
-  test("BONUS FINDING: POST /reject never checks the caller was the assigned partner -- an uninvolved rider can un-assign someone else's claimed order (delivery.js:164-191)", async () => {
+  // Found while adding the /reject coverage above (1a BONUS FINDING, fixed in M1): /reject
+  // never checked that the caller was the assigned partner, so any rider could un-assign
+  // someone else's claimed order.
+  test("FIXED (M1): an uninvolved rider can no longer reject someone else's claimed order -> 403, claim intact", async () => {
     const { riderA, riderB, orderId } = seedDeliveryFixture(db);
-    const claimRes = await request(server).post(`/api/delivery/accept/${orderId}`).send({ riderId: riderA.id });
+    const claimRes = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
     expect(claimRes.status).toBe(200);
 
-    // riderB has no connection to this order at all, yet can still "reject" it.
-    const res = await request(server).post(`/api/delivery/reject/${orderId}`).send({ riderId: riderB.id });
-    expect(res.status).toBe(200); // succeeds -- no ownership check exists
+    const res = await request(server).post(`/api/delivery/reject/${orderId}`).set(bearer(riderB.id, 'delivery')).send({ riderId: riderB.id });
+    expect(res.status).toBe(403);
 
     const orderDoc = await db.collection('orders').doc(orderId).get();
-    expect(orderDoc.data().status).toBe('ready');
-    expect(orderDoc.data().deliveryPartnerId).toBeNull(); // riderA's legitimate claim, wiped out by riderB
+    expect(orderDoc.data().status).toBe('out_for_delivery');
+    expect(orderDoc.data().deliveryPartnerId).toBe(riderA.id);
+  });
+
+  test('M1: a delivered order cannot be "rejected" back to ready by its rider -> 409', async () => {
+    const { riderA, orderId } = seedDeliveryFixture(db, { order: { status: 'delivered', deliveryPartnerId: 'rider-A' } });
+    const res = await request(server).post(`/api/delivery/reject/${orderId}`).set(bearer(riderA.id, 'delivery')).send({});
+    expect(res.status).toBe(409);
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    expect(orderDoc.data().status).toBe('delivered');
   });
 });

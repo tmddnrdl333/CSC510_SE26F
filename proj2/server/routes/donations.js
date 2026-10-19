@@ -1,5 +1,6 @@
 const express = require('express');
 const { db } = require('../config/firebase');
+const { requireAuth } = require('../middleware/auth');
 const { challengeDefinitions } = require('../../src/challenges/challengeDefinitions');
 
 const router = express.Router();
@@ -59,12 +60,13 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// Update donation counter (called when orders reach multiples of 10)
-router.post('/update', async (req, res) => {
+// Update donation counter (called when orders reach multiples of 10).
+// Requires login: anonymous callers could inflate it without bound (UC20).
+router.post('/update', requireAuth, async (req, res) => {
   try {
     const { mealsToAdd } = req.body;
     
-    if (!mealsToAdd || mealsToAdd <= 0) {
+    if (!Number.isInteger(mealsToAdd) || mealsToAdd <= 0) {
       return res.status(400).json({ error: 'Invalid meals amount' });
     }
 
@@ -113,8 +115,8 @@ router.get('/history', async (req, res) => {
   }
 });
 
-// Record a donation
-router.post('/record', async (req, res) => {
+// Record a donation (requires login, same reason as /update)
+router.post('/record', requireAuth, async (req, res) => {
   try {
     const { amount, description } = req.body;
     
@@ -127,6 +129,7 @@ router.post('/record', async (req, res) => {
       id: donationRef.id,
       amount,
       description: description || 'Meal donation',
+      recordedBy: req.user.id,
       createdAt: new Date()
     });
 

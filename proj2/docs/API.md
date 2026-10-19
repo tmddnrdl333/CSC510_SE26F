@@ -7,6 +7,29 @@ This document describes the REST API endpoints for the Hungry Wolf application.
 - Development: `http://localhost:5001/api`
 - Production: `https://your-domain.com/api`
 
+## Authentication (M1 trust layer)
+
+`POST /auth/register` and `POST /auth/login` return a JWT. Send it on protected
+routes as:
+
+```
+Authorization: Bearer <token>
+```
+
+The server reads the caller's id and role from the token (`req.user`). Any
+`riderId` / `customerId` still sent in a body must match the token, or the
+request is refused with 403. Tokens expire after 7 days. Passwords are stored
+as bcrypt hashes.
+
+| Status | Meaning on a protected route |
+|---|---|
+| 401 | No token, or the token is malformed, expired or not signed by this server |
+| 403 | Valid token, but wrong role, or not your order / account |
+| 409 | The order is not in a state that allows this action (e.g. delivering twice) |
+
+Routes marked **Auth: required (M1)** below enforce this. Routes without that
+line do not check a token yet.
+
 ## Endpoints
 
 ### Authentication
@@ -37,7 +60,8 @@ Register a new user.
 ```json
 {
   "message": "User registered successfully",
-  "user": { ... }
+  "user": { ... },
+  "token": "<jwt>"
 }
 ```
 
@@ -56,9 +80,19 @@ Login with email and password.
 ```json
 {
   "message": "Login successful",
-  "user": { ... }
+  "user": { ... },
+  "token": "<jwt>"
 }
 ```
+
+Wrong email or password: `401 { "error": "Invalid credentials" }`.
+
+#### GET /auth/me
+The logged-in user, from the token.
+
+**Auth:** required (M1)
+
+**Response:** `{ "user": { ... } }`
 
 #### GET /auth/profile
 Get current user profile.
@@ -152,16 +186,21 @@ Get specific order by ID.
 **Headers:** Authorization required
 
 #### PUT /orders/:id/status
-Update order status.
+Move an order along the kitchen workflow.
 
-**Headers:** Authorization required
+**Auth:** required (M1), role `restaurant`, and the order's `restaurantId` must be the caller.
 
 **Request Body:**
 ```json
 {
-  "status": "accepted|rejected|preparing|ready|picked_up|delivered"
+  "status": "confirmed|preparing|ready|cancelled"
 }
 ```
+
+Allowed moves (`src/orders/statusTransitions.js`): `pending → confirmed|preparing|cancelled`,
+`confirmed → preparing|cancelled`, `preparing → ready|cancelled`, `ready → cancelled`.
+Anything else → 409. `out_for_delivery` and `delivered` → 400: only the assigned
+rider sets those, through `/delivery/accept` and `/delivery/deliver`.
 
 #### POST /orders/:id/rate
 Add rating to order.
@@ -206,9 +245,10 @@ Get points transaction history.
 - `limit` (optional): Number of transactions to return (default: 10)
 
 #### POST /points/use
-Use points for discount.
+Spend the logged-in customer's points for a discount (1 point = $0.01).
 
-**Headers:** Authorization required
+**Auth:** required (M1), role `customer`. Runs in a Firestore transaction, so
+concurrent requests can't spend the same balance twice.
 
 **Request Body:**
 ```json
@@ -217,6 +257,12 @@ Use points for discount.
   "description": "Discount for order"
 }
 ```
+
+Errors: 400 insufficient balance (`availablePoints`, `requestedPoints` in the body), 404 no points record.
+
+**Earning points:** when an order is delivered the customer earns
+`floor(10% × totalAmount)` points, or 15% if the restaurant's profile has
+`isLocalLegend: true` (`src/points/computePoints.js`). A $50 order earns 5 points.
 
 #### POST /points/calculate-discount
 Calculate discount amount for points.
@@ -295,6 +341,16 @@ Update restaurant menu.
 
 ### Delivery
 
+The four routes below act as the logged-in delivery partner.
+**Auth:** required (M1), role `delivery`. No `riderId` is needed in the body.
+
+| Route | Rule | Errors |
+|---|---|---|
+| `POST /delivery/accept/:orderId` | Claims a `ready`, unassigned order atomically | 404, 409 already assigned, 400 not ready / you already have an active order |
+| `POST /delivery/pickup/:orderId` | Records `pickedUpAt`; assigned partner only | 404, 403, 409 not out for delivery |
+| `POST /delivery/reject/:orderId` | Releases your claim back to `ready` | 404, 403, 409 |
+| `POST /delivery/deliver/:orderId` | Marks delivered, pays you `deliveryFee + tipAmount`, awards the customer's points. Exactly once. | 404, 403 not your order, 409 already delivered |
+
 #### GET /delivery/profile
 Get delivery partner profile.
 
@@ -322,12 +378,21 @@ Get donation statistics.
 #### POST /donations/update
 Update donation counter.
 
+**Auth:** required (M1). `mealsToAdd` must be a positive integer.
+
 **Request Body:**
 ```json
 {
   "mealsToAdd": 1
 }
 ```
+
+#### POST /donations/record
+Record a donation entry.
+
+**Auth:** required (M1). Stores `recordedBy` = the caller's id.
+
+**Request Body:** `{ "amount": 1, "description": "Meal donation" }`
 
 #### GET /donations/history
 Get donation history.
@@ -345,6 +410,17 @@ Get donation history.
   ]
 }
 ```
+
+### Users
+
+#### GET /users/:id
+Get a user by id.
+
+#### PUT /users/:id
+Update your own `profile` and/or `location`.
+
+**Auth:** required (M1); `:id` must be the caller (403 otherwise). Any other
+body field (`role`, `password`, `totalEarnings`, …) is ignored.
 
 ## Error Responses
 

@@ -11,6 +11,7 @@ const request = require('supertest');
 const { db } = require('../server/config/firebase');
 const donationRoutes = require('../server/routes/donations');
 const { buildApp } = require('./helpers/buildApp');
+const { bearer } = require('./helpers/authToken');
 
 describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
   let server;
@@ -47,46 +48,66 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
   });
 
   test('extension 2a (partial): POST /update rejects zero/negative meal amounts -> 400 (donations.js:47)', async () => {
-    const zero = await request(server).post('/api/donations/update').send({ mealsToAdd: 0 });
+    const zero = await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: 0 });
     expect(zero.status).toBe(400);
 
-    const negative = await request(server).post('/api/donations/update').send({ mealsToAdd: -5 });
+    const negative = await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: -5 });
     expect(negative.status).toBe(400);
   });
 
-  test('STAR FINDING: any unauthenticated caller can inflate the stored donation counter without bound (donations.js:59)', async () => {
-    seedDeliveredOrders(5); // real value: floor(5/10) = 0 meals donated
-    const HUGE_AMOUNT = 999999999;
+  // --- HEADLINE FINDING (fixed in M1) ---
+  // 1a: POST /update had no auth of any kind, so anyone could add 999,999,999 meals to the
+  // stored counter. M1 requires a logged-in user.
+  test('FIXED (M1): an unauthenticated caller can no longer inflate the stored donation counter -> 401 (donations.js:59)', async () => {
+    seedDeliveredOrders(5);
 
-    // No customerId/ownerId/token of any kind -- the only guard is "amount > 0" (donations.js:47).
-    const updateRes = await request(server)
-      .post('/api/donations/update')
-      .send({ mealsToAdd: HUGE_AMOUNT });
-    expect(updateRes.status).toBe(200);
-    expect(updateRes.body.mealsDonated).toBe(HUGE_AMOUNT);
+    const updateRes = await request(server).post('/api/donations/update').send({ mealsToAdd: 999999999 });
+    expect(updateRes.status).toBe(401);
 
-    // The tampered value is now permanently persisted, decoupled from any real order activity.
     const settingsDoc = await db.collection('settings').doc('donations').get();
-    expect(settingsDoc.data().counter).toBe(HUGE_AMOUNT);
+    expect(settingsDoc.exists).toBe(false); // nothing was written
 
-    // --- Nuance vs. usecases.md's postcondition ---
-    // usecases.md's UC20 postcondition says: "Displayed count matches the recorded (possibly
-    // tampered) counter." Reading donations.js's GET /stats handler line by line shows it reads
-    // the settings/donations doc (to lazily initialize it) but NEVER puts `donationCounter` into
-    // its JSON response -- `mealsDonated` in the response is always freshly recomputed from the
-    // real count of delivered orders. So today, the tampered counter is NOT what UC20's actual
-    // viewing flow (GET /stats, consumed by client/src/pages/HomePage.tsx) shows to a customer.
-    // The vulnerability (unbounded, unauthenticated write) is real and reproduced above; the
-    // specific "customer sees the tampered number" consequence described in the doc's
-    // postcondition currently is not, because /stats doesn't read the counter it corrupts.
+    // GET /stats is still computed from real delivered orders, never from the counter.
     const statsRes = await request(server).get('/api/donations/stats');
-    expect(statsRes.body.mealsDonated).toBe(0); // still the real floor(5/10)
-    expect(statsRes.body.mealsDonated).not.toBe(HUGE_AMOUNT);
+    expect(statsRes.body.mealsDonated).toBe(0); // floor(5/10)
   });
 
+  test('FIXED (M1): a forged/garbage token is rejected the same way -> 401', async () => {
+    const res = await request(server)
+      .post('/api/donations/update')
+      .set({ Authorization: 'Bearer not-a-real-token' })
+      .send({ mealsToAdd: 10 });
+    expect(res.status).toBe(401);
+  });
+
+  test('M1: a logged-in user can still update the counter (milestone scope is "requires login")', async () => {
+    const res = await request(server)
+      .post('/api/donations/update')
+      .set(bearer('customer-1', 'customer'))
+      .send({ mealsToAdd: 2 });
+    expect(res.status).toBe(200);
+    expect(res.body.mealsDonated).toBe(2);
+  });
+
+  test('M1: non-integer meal amounts are rejected -> 400', async () => {
+    const res = await request(server)
+      .post('/api/donations/update')
+      .set(bearer('customer-1', 'customer'))
+      .send({ mealsToAdd: 1.5 });
+    expect(res.status).toBe(400);
+  });
+
+  test('M1: POST /record without a token -> 401 and nothing is logged', async () => {
+    const res = await request(server).post('/api/donations/record').send({ amount: 50 });
+    expect(res.status).toBe(401);
+    const history = await request(server).get('/api/donations/history');
+    expect(history.body.history).toEqual([]);
+  });
+
+  // Still true after M1 for logged-in callers -- see docs/plans/m1-trust-layer.md §5.
   test('the counter has no upper bound and keeps compounding across repeated calls (donations.js:59)', async () => {
-    await request(server).post('/api/donations/update').send({ mealsToAdd: 1000 });
-    const second = await request(server).post('/api/donations/update').send({ mealsToAdd: 2000 });
+    await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: 1000 });
+    const second = await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: 2000 });
     expect(second.status).toBe(200);
     expect(second.body.mealsDonated).toBe(3000);
   });
@@ -94,6 +115,7 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
   test('POST /record logs a donation entry (donations.js:96-126)', async () => {
     const res = await request(server)
       .post('/api/donations/record')
+      .set(bearer('customer-1', 'customer'))
       .send({ amount: 25, description: 'Test meal drive' });
     expect(res.status).toBe(200);
     expect(res.body.donation.amount).toBe(25);
@@ -103,9 +125,9 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
   });
 
   test('POST /record rejects zero/negative amounts -> 400 (donations.js:101)', async () => {
-    const zero = await request(server).post('/api/donations/record').send({ amount: 0 });
+    const zero = await request(server).post('/api/donations/record').set(bearer('customer-1', 'customer')).send({ amount: 0 });
     expect(zero.status).toBe(400);
-    const negative = await request(server).post('/api/donations/record').send({ amount: -5 });
+    const negative = await request(server).post('/api/donations/record').set(bearer('customer-1', 'customer')).send({ amount: -5 });
     expect(negative.status).toBe(400);
   });
 

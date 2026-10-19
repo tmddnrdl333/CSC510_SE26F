@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const { hashPassword, verifyPassword, signToken, requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -28,14 +29,15 @@ router.post('/register', [
     // Create new user
     const user = await User.create({
       email,
-      password, // In production, hash this password
+      password: await hashPassword(password),
       role,
       profile
     });
 
     res.status(201).json({
       message: 'User registered successfully',
-      user: user.toJSON()
+      user: user.toJSON(),
+      token: signToken(user)
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -62,18 +64,31 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // In production, verify password hash here
-    // For now, we'll just check if password matches (basic validation)
-    if (user.password !== password) {
+    if (!(await verifyPassword(user, password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     res.json({
       message: 'Login successful',
-      user: user.toJSON()
+      user: user.toJSON(),
+      token: signToken(user)
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Current user from the session token (M1)
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ user: user.toJSON() });
+  } catch (error) {
+    console.error('Get current user error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -92,7 +107,7 @@ router.post('/profile', [
     const { email, password } = req.body;
     const user = await User.findByEmail(email);
     
-    if (!user || user.password !== password) {
+    if (!(await verifyPassword(user, password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -120,7 +135,7 @@ router.put('/profile', [
     const { email, password, profile } = req.body;
     const user = await User.findByEmail(email);
     
-    if (!user || user.password !== password) {
+    if (!(await verifyPassword(user, password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 

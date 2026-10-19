@@ -22,10 +22,9 @@ const DeliveryHome: React.FC = () => {
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser', user?.id],
     queryFn: async () => {
-      const response = await api.post('/delivery/profile', {
-        email: user?.email,
-        password: 'dummy' // This is just to get the current user data
-      });
+      // Identity comes from the session token (M1). The old call posted
+      // password 'dummy' to /delivery/profile and always got a 401.
+      const response = await api.get('/auth/me');
       return response.data.user;
     },
     enabled: !!user,

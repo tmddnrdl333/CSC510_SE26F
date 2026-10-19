@@ -1,6 +1,7 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
 const User = require("../models/User");
+const { verifyPassword } = require("../middleware/auth");
 const Restaurant = require("../models/Restaurant");
 
 const router = express.Router();
@@ -22,7 +23,7 @@ router.post(
       const { email, password } = req.body;
       const user = await User.findByEmail(email);
 
-      if (!user || user.password !== password || user.role !== "customer") {
+      if (!(await verifyPassword(user, password)) || user.role !== "customer") {
         return res
           .status(401)
           .json({ error: "Invalid credentials or not a customer" });
@@ -57,7 +58,7 @@ router.put(
       const { email, password, profile } = req.body;
       const user = await User.findByEmail(email);
 
-      if (!user || user.password !== password || user.role !== "customer") {
+      if (!(await verifyPassword(user, password)) || user.role !== "customer") {
         return res
           .status(401)
           .json({ error: "Invalid credentials or not a customer" });

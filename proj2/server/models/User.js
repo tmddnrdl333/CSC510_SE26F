@@ -164,6 +164,23 @@ class User {
       throw new Error(`Failed to update earnings: ${error.message}`);
     }
   }
+
+  /** Set a delivery partner's availability ('free' | 'busy'). */
+  async updateDeliveryStatus(status) {
+    if (!['free', 'busy'].includes(status)) {
+      throw new Error(`Invalid delivery status: ${status}`);
+    }
+    try {
+      await db.collection('users').doc(this.id).update({
+        deliveryStatus: status,
+        updatedAt: new Date()
+      });
+      this.deliveryStatus = status;
+      return this;
+    } catch (error) {
+      throw new Error(`Failed to update delivery status: ${error.message}`);
+    }
+  }
 }
 
 module.exports = User;

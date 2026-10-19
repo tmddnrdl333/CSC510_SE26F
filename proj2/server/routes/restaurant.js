@@ -1,6 +1,7 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
 const User = require("../models/User");
+const { verifyPassword } = require("../middleware/auth");
 const Restaurant = require("../models/Restaurant");
 
 const router = express.Router();
@@ -41,7 +42,7 @@ router.put(
       const { email, password, restaurant: restaurantData } = req.body;
       const user = await User.findByEmail(email);
 
-      if (!user || user.password !== password || user.role !== "restaurant") {
+      if (!(await verifyPassword(user, password)) || user.role !== "restaurant") {
         return res
           .status(401)
           .json({ error: "Invalid credentials or not a restaurant" });
