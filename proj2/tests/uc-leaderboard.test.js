@@ -23,11 +23,9 @@ function seedCustomer(id, { totalPoints = 0 } = {}) {
     createdAt: now,
     updatedAt: now,
   });
-  db.__seed('points', `points-${id}`, {
-    id: `points-${id}`,
-    userId: id,
-    totalPoints,
-  });
+  // Real scheme (#55): doc id === customerId, no `userId` field -- matches
+  // awardPointsForOrder (server/routes/points.js) and GET /api/points.
+  db.__seed('points', id, { totalPoints, availablePoints: totalPoints, usedPoints: 0, transactions: [] });
 }
 
 describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {

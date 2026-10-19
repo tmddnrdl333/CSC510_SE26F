@@ -10,8 +10,19 @@
 // server/services/badgeService.js writes badges/badgesStats directly onto
 // the same doc (server/services/badgeService.js:17-25), bypassing the User
 // model -- so User.findById(id).badges would silently be undefined.
+//
+// Also reads the points doc directly (not via models/Points.js) for the same
+// reason: models/Points.js (getOrCreate/findByUserId) uses an auto-generated
+// doc id plus a `userId` field, queried via `.where('userId','==',...)`. The
+// REAL points-awarding path -- awardPointsForOrder in server/routes/points.js,
+// and GET /api/points (the dashboard) -- both read/write
+// db.collection('points').doc(customerId) directly and never set a `userId`
+// field. Confirmed against M1's branch (origin/Liwen-M1, commit 1561cb7),
+// which kept this same addressing scheme when it changed the points formula.
+// Using Points.findByUserId() here meant this loader could never see real,
+// production-earned points for any user (issue #55). models/Points.js's
+// scheme is the odd one out and should not be used for reading points here.
 const { db } = require('../config/firebase');
-const Points = require('../models/Points');
 
 const TIER_RANK = { bronze: 1, silver: 2, gold: 3, diamond: 4 };
 
@@ -46,9 +57,9 @@ async function countDeliveredOrders(userId) {
  * @returns {Promise<{ userId: string, totalPoints: number, badgeTiers: number, deliveredOrderCount: number }>}
  */
 async function loadUserScoreData(userId) {
-  const [userDoc, points, deliveredOrderCount] = await Promise.all([
+  const [userDoc, pointsDoc, deliveredOrderCount] = await Promise.all([
     db.collection('users').doc(userId).get(),
-    Points.findByUserId(userId),
+    db.collection('points').doc(userId).get(),
     countDeliveredOrders(userId),
   ]);
 
@@ -56,7 +67,7 @@ async function loadUserScoreData(userId) {
 
   return {
     userId,
-    totalPoints: points ? points.totalPoints : 0,
+    totalPoints: pointsDoc.exists ? (pointsDoc.data().totalPoints || 0) : 0,
     badgeTiers: sumBadgeTiers(badgesSnapshot),
     deliveredOrderCount,
   };

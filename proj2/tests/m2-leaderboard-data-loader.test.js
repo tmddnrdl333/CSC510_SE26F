@@ -42,7 +42,9 @@ describe('loadUserScoreData', () => {
         streak_days: { currentTier: null }, // not earned -> 0
       },
     });
-    db.__seed('points', 'points-alice', { id: 'points-alice', userId: 'alice', totalPoints: 42 });
+    // Real scheme (#55): doc id === customerId, no `userId` field -- matches
+    // awardPointsForOrder (server/routes/points.js) and GET /api/points.
+    db.__seed('points', 'alice', { totalPoints: 42, availablePoints: 42, usedPoints: 0, transactions: [] });
     seedDeliveredOrder('order-1', 'alice');
     seedDeliveredOrder('order-2', 'alice');
 
@@ -95,9 +97,9 @@ describe('loadUserScoreData', () => {
 describe('loadUserScoreDataForIds', () => {
   test('loads several users concurrently, each independently', async () => {
     seedUser('alice');
-    db.__seed('points', 'points-alice', { id: 'points-alice', userId: 'alice', totalPoints: 10 });
+    db.__seed('points', 'alice', { totalPoints: 10, availablePoints: 10, usedPoints: 0, transactions: [] });
     seedUser('bob');
-    db.__seed('points', 'points-bob', { id: 'points-bob', userId: 'bob', totalPoints: 20 });
+    db.__seed('points', 'bob', { totalPoints: 20, availablePoints: 20, usedPoints: 0, transactions: [] });
 
     const results = await loadUserScoreDataForIds(['alice', 'bob']);
 
