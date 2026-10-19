@@ -163,4 +163,16 @@ describe('UC4: Browse nearby restaurants (Customer)', () => {
     expect(res.body.restaurants[0].distanceKm).toBeLessThanOrEqual(res.body.restaurants[1].distanceKm);
     expect(typeof res.body.restaurants[0].distanceMiles).toBe('number');
   });
+
+  test('regression #62: the list survives with fewer than 2 restaurants (1a latent crash)', async () => {
+    // 1a finding: a stray console.log(restaurants[1].location) after res.json()
+    // threw with 0-1 restaurants and, on Node 22, killed the process. Every
+    // other UC4 test seeds >= 2 restaurants to dodge it; this one deliberately
+    // seeds a single restaurant and expects a clean 200.
+    seedRestaurant('solo-resto', { name: 'Only One', menu: [] });
+
+    const res = await request(server).get('/api/customer/restaurants');
+    expect(res.status).toBe(200);
+    expect(res.body.restaurants).toHaveLength(1);
+  });
 });
