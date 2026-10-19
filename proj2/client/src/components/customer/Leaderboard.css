@@ -1,0 +1,37 @@
+.leaderboard {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+  margin-bottom: 32px;
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.leaderboard-eyebrow {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.leaderboard h2 {
+  font-size: 2rem;
+  margin: 0;
+  color: #0f172a;
+}
+
+.leaderboard-subtitle {
+  color: #475569;
+  margin-top: 8px;
+  max-width: 460px;
+}
