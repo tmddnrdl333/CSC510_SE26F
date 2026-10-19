@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // scripts/seed-leaderboard-demo.js
-// Seeds three demo customers (varying points, badges, delivered orders) plus
-// an accepted friendship between two of them, against the Firestore emulator,
-// so the M2 leaderboard (issue #32) can be viewed with real data locally.
+// Seeds three demo customers (varying points and delivered orders, badges
+// computed for real from those orders) plus an accepted friendship between
+// two of them, against the Firestore emulator, so the M2 leaderboard
+// (issue #32) can be viewed with real data locally.
 //
 // Prerequisites: the Firestore emulator running (`docker compose up -d` from
 // proj2/), and proj2/server/.env present (points FIRESTORE_EMULATOR_HOST at it
@@ -44,22 +45,16 @@ loadServerEnv();
 const { db } = require('../server/config/firebase');
 const User = require('../server/models/User');
 const Friendship = require('../server/models/Friendship');
+const { updateCustomerBadges } = require('../server/services/badgeService');
 
-// Writes a points doc in BOTH addressing schemes this codebase uses for the
-// same `points` collection, so this demo reads consistently everywhere:
-//   - doc id === customerId, no `userId` field -- what routes/points.js's
-//     GET / (the dashboard's source) and awardPointsForOrder (the real
-//     order-completion path, routes/delivery.js) both read/write.
-//   - a `userId` field on that same doc -- what models/Points.js's
-//     findByUserId() (what leaderboardDataLoader.js reads) queries by.
-// NOT a fix to either reader; this only shapes seeded data to satisfy both
-// as they exist today. The two schemes are a real, separate app-level
-// inconsistency -- worth its own issue, out of scope here.
+// Writes a points doc the way the real app does: doc id === customerId, no
+// `userId` field. Matches awardPointsForOrder (server/routes/points.js, the
+// real order-completion path, confirmed against M1's branch) and GET
+// /api/points (the dashboard). See issue #55 -- a loader that read points
+// any other way couldn't see real, production-earned points at all.
 async function seedPoints(customerId, totalPoints) {
   const now = new Date();
   await db.collection('points').doc(customerId).set({
-    userId: customerId,
-    userRole: 'customer',
     totalPoints,
     availablePoints: totalPoints,
     usedPoints: 0,
@@ -99,25 +94,18 @@ async function main() {
   await seedPoints(alice.id, 120);
   await seedPoints(bob.id, 40);
 
-  // Badges snapshot, hand-written in the shape server/services/badgeService.js
-  // writes (currentTier/progress/nextTierThreshold/lastUpdatedAt per badge id).
-  await db.collection('users').doc(alice.id).set({
-    badges: {
-      unique_restaurants: { currentTier: 'gold', progress: 10, nextTierThreshold: 20, lastUpdatedAt: new Date().toISOString() },
-      total_orders: { currentTier: 'bronze', progress: 5, nextTierThreshold: 10, lastUpdatedAt: new Date().toISOString() },
-    },
-  }, { merge: true });
-  await db.collection('users').doc(bob.id).set({
-    badges: {
-      streak_days: { currentTier: 'silver', progress: 7, nextTierThreshold: 14, lastUpdatedAt: new Date().toISOString() },
-    },
-  }, { merge: true });
-  // carol: no `badges` field at all -- exercises the "missing snapshot -> 0" path.
-
   // Delivered orders -> donatedMeals = floor(deliveredOrderCount / 10).
   await seedDeliveredOrders(alice.id, 23); // 2 donated meals
   await seedDeliveredOrders(bob.id, 11);   // 1 donated meal
   // carol: 0 delivered orders.
+
+  // Badges computed for real from the seeded orders (the same path
+  // CustomerBadges.tsx's auto-refresh triggers), not hand-written -- a
+  // hand-written `badges` snapshot would just get overwritten the moment
+  // any page with CustomerBadges.tsx mounts anyway.
+  await updateCustomerBadges(alice.id);
+  await updateCustomerBadges(bob.id);
+  await updateCustomerBadges(carol.id); // 0 orders -> all tiers null, correctly
 
   // Accepted friendship: alice <-> bob. Carol stays unconnected, so
   // ?scope=friends for alice/bob excludes her.
@@ -125,7 +113,12 @@ async function main() {
   await friendship.accept();
 
   console.log('Seeded leaderboard demo data:');
-  console.log({ alice: alice.id, bob: bob.id, carol: carol.id });
+  console.log([
+    { name: 'Alice', id: alice.id, email: alice.email },
+    { name: 'Bob', id: bob.id, email: bob.email },
+    { name: 'Carol', id: carol.id, email: carol.email },
+  ]);
+  console.log('Password for all three: pw');
   process.exit(0);
 }
 
