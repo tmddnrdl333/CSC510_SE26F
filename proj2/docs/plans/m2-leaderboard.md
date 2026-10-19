@@ -105,7 +105,7 @@ Scope note: `docs/MILESTONES.md:50` specifies "send, accept, list" for M2; `reje
 
 | Param | Behavior |
 |---|---|
-| *(none)* | Global board: top-K users by combined score (§6), served from a periodically refreshed snapshot per design doc invariant 8 — **not** a live per-request scan over all `users`. Exact refresh mechanism (cron-style job vs. refresh-on-write) is still an open question — see §8. |
+| *(none)* | Global board: top-K users by combined score (§6). **Implemented (issue #31) as a live per-request scan** over every `role: 'customer'` user — `server/routes/leaderboard.js` — not the periodically refreshed snapshot design doc invariant 8 calls for. This is a deliberate, known-limit deferral, not an oversight: see §8. |
 | `?scope=friends` | Caller = `req.user.id` (§5) — no `userId` param. Computes `getFriends(req.user.id)` (§4), then scores that set plus the caller themself in real time — bounded by friend count, no caching needed (design doc invariant 8 explicitly allows this path to be naive). |
 | `?limit=` | Optional, caps rows returned (both scopes). **Default: 20.** |
 
@@ -195,4 +195,4 @@ All route-level tests drive the caller identity via supertest's `.set('x-test-us
 
 ## 8. Open questions for the M2 GitHub issue (not resolved by this plan)
 
-- Global-board refresh mechanism: scheduled recompute job vs. refresh-triggered-on-write (e.g., recompute a user's score contribution whenever their points/badges/delivered-count changes) vs. refresh-on-read-if-stale with a TTL. Any of these satisfy invariant 8; this is still pending a team decision — this plan doesn't pick one.
+- **Global-board cache (design doc invariant 8) — deferred to Project 3, known limit.** Issue #31 shipped the global board as a live per-request scan (`getAllCustomerIds()` + `loadUserScoreDataForIds()` over every customer, in `server/routes/leaderboard.js`), not the periodically refreshed top-K snapshot invariant 8 specifies. This is fine at course scale (the scale this project runs at) but is O(N) reads per request and will not scale past it — invariant 8's warning ("course-scale seed data makes the naive version work; the policy exists so nobody 'optimizes' by storing scores as truth") is exactly the situation this leaves in place. Carrying this forward rather than closing it: Project 3 should either add the cached top-K snapshot (badgeService-style, per the design doc) or explicitly re-affirm the live scan is still acceptable at whatever scale Project 3 runs at. The refresh-mechanism question itself (scheduled recompute vs. refresh-on-write vs. refresh-on-read-if-stale with a TTL) remains unresolved and undecided by this plan.
