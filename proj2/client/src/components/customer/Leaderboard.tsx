@@ -26,13 +26,12 @@ const defaultResponse: LeaderboardResponse = {
   entries: [],
 };
 
-// Loading/empty/error states are polished in piece 5.
 const Leaderboard: React.FC = () => {
   const { user } = useAuth();
   const customerId = user?.id;
   const [scope, setScope] = useState<LeaderboardScope>('global');
 
-  const { data = defaultResponse, isLoading } = useQuery<LeaderboardResponse>({
+  const { data = defaultResponse, isLoading, isError } = useQuery<LeaderboardResponse>({
     queryKey: ['leaderboard', scope],
     enabled: !!customerId,
     queryFn: async () => {
@@ -40,6 +39,12 @@ const Leaderboard: React.FC = () => {
       return response.data as LeaderboardResponse;
     },
   });
+
+  // Friends scope always includes the caller themself (plan doc §5), so a
+  // "friends" board with nobody but you is the meaningful empty state here --
+  // not a literal zero-length array.
+  const otherEntries = data.entries.filter((entry) => entry.userId !== customerId);
+  const isEmpty = scope === 'friends' ? otherEntries.length === 0 : data.entries.length === 0;
 
   return (
     <section className="leaderboard">
@@ -74,7 +79,22 @@ const Leaderboard: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <p>Loading leaderboard...</p>
+        <div className="leaderboard-loading">
+          <div className="loading-spinner">🏆</div>
+          <p>Loading leaderboard...</p>
+        </div>
+      ) : isError ? (
+        <div className="leaderboard-error">
+          <p>Unable to load the leaderboard right now. Please try again shortly.</p>
+        </div>
+      ) : isEmpty ? (
+        <div className="leaderboard-empty">
+          <p>
+            {scope === 'friends'
+              ? 'Add friends to see them here.'
+              : 'No one on the leaderboard yet.'}
+          </p>
+        </div>
       ) : (
         <table className="leaderboard-table">
           <thead>
