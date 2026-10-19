@@ -105,7 +105,7 @@ Scope note: `docs/MILESTONES.md:50` specifies "send, accept, list" for M2; `reje
 
 | Param | Behavior |
 |---|---|
-| *(none)* | Global board: top-K users by combined score (§6), served from a periodically refreshed snapshot per design doc invariant 8 — **not** a live per-request scan over all `users`. Exact refresh mechanism (cron-style job vs. refresh-on-write) is still an open question — see §8. |
+| *(none)* | Global board: top-K users by combined score (§6). **Implemented (issue #31) as a live per-request scan** over every `role: 'customer'` user — `server/routes/leaderboard.js` — not the periodically refreshed snapshot design doc invariant 8 calls for. This is a deliberate, known-limit deferral, not an oversight: see §8. |
 | `?scope=friends` | Caller = `req.user.id` (§5) — no `userId` param. Computes `getFriends(req.user.id)` (§4), then scores that set plus the caller themself in real time — bounded by friend count, no caching needed (design doc invariant 8 explicitly allows this path to be naive). |
 | `?limit=` | Optional, caps rows returned (both scopes). **Default: 20.** |
 
@@ -123,13 +123,16 @@ New `client/src/components/customer/Leaderboard.tsx`, mounted as a sub-route of 
 
 Design doc invariant 3 proposes the three terms below **unweighted** (a plain sum). This plan proposes weighting two of them instead — reasoning below. **Status: proposed, pending team agreement** — not a finalized decision; record whatever the team settles on in the M2 GitHub issue before implementation, per `docs/MILESTONES.md:56`.
 
+**Update (issue #30, following #51):** M1 settled the points formula as `floor(10% of bill)` (`floor(15%)` at Local Legend restaurants), not the flat 1-point-per-dollar rate this section originally reasoned its weights from — about 10x smaller per order than this section assumed. The weights below are retuned accordingly: badge tiers drop from `10x` to `2x` (points no longer need as large a multiplier applied to badges to stay comparable in magnitude); donated meals stay at `5x` (that term is unaffected by the points change). See PR #51 for the points-formula change itself.
+
 ```
-score(user) = totalPoints + 10 * badgeTiers + 5 * donatedMeals
+score(user) = totalPoints + BADGE_TIER_WEIGHT * badgeTiers + DONATED_MEAL_WEIGHT * donatedMeals
+            = totalPoints + 2 * badgeTiers + 5 * donatedMeals
 ```
 
-where `badgeTiers` = number of badge tiers earned (from the `users.badges` snapshot) and `donatedMeals` = `floor(user's delivered-order count / 10)`.
+where `badgeTiers` = number of badge tiers earned (from the `users.badges` snapshot) and `donatedMeals` = `floor(user's delivered-order count / 10)`. The weights are named constants in the implementation (`server/services/leaderboardService.js`) specifically so they're easy to retune again.
 
-**Why weights at all**: without them, points drown out the other two terms. Under M1's revised formula (10–15% of order amount, replacing the current flat 1-point-per-dollar), a moderately active customer accumulates points in the hundreds, while badge tiers cap at 72 (18 badges × 4 tiers) and donated meals are typically single digits at course-scale seed data (1 per 10 delivered orders). A plain 1:1:1 sum would make badges and donation impact nearly invisible next to points — the leaderboard would read as a thinly disguised spend ranking. `10x` on badge tiers and `5x` on donated meals bring all three terms into comparable magnitude. The specific multipliers are a starting proposal to make the other two terms *visible*, not the output of a formal analysis — revisit once real usage data exists (e.g. via the M0 eval).
+**Why weights at all**: without them, points still drown out the other two terms even at the smaller post-M1 scale. A moderately active customer accumulates points in the tens (a handful of $20–30 orders at 10–15% each), while badge tiers cap at 72 (18 badges × 4 tiers) and donated meals are typically single digits at course-scale seed data (1 per 10 delivered orders). A plain 1:1:1 sum would still make badges and donation impact hard to see next to points. `2x` on badge tiers and `5x` on donated meals bring all three terms into comparable magnitude at this scale. The specific multipliers are a starting proposal to make the other two terms *visible*, not the output of a formal analysis — revisit once real usage data exists (e.g. via the M0 eval), and expect to retune again if the points formula changes further.
 
 Rationale for each term's definition (independent of the weights above):
 
@@ -137,7 +140,7 @@ Rationale for each term's definition (independent of the weights above):
 - **Badge tier count**, not raw badge progress values — tiers are already normalized (0–4 per badge) and comparable across the very different metrics badges track (streaks vs. spend vs. review count). Read from the `users.badges` snapshot as-is; per design doc invariant 9, a missing/stale snapshot counts as 0 tiers rather than triggering a synchronous recompute on the leaderboard request path.
 - **`floor(deliveredOrderCount / 10)`**, computed fresh from `orders` — explicitly *not* read from `settings/donations.counter`, because that counter is globally shared (not per-user) and, per Project 1a's finding, incrementable by anyone through an unauthenticated endpoint. Using the derived per-user count keeps the leaderboard un-forgeable by that route; see design doc invariant 1 ("derive, don't double-book") and invariant 6 (trust-layer caveat below).
 
-**Known risk, only partly mitigated by the weights above**: `totalPoints` is itself spend-derived (10–15% of order amount under M1), so a heavy spender's points term alone can still outweigh a lighter spender's weighted badge/donation terms — the weights make badges and donations *visible*, not necessarily *dominant* ("disposable-income leaderboard" risk, design doc §4 closing note). Full normalization/weighting is still a product decision for the M0 eval to settle; the `1 / 10x / 5x` weighting here is a proposal to bring to the team, not a resolved answer.
+**Known risk, only partly mitigated by the weights above**: `totalPoints` is itself spend-derived (`floor(10–15%)` of order amount under M1), so a heavy spender's points term alone can still outweigh a lighter spender's weighted badge/donation terms — the weights make badges and donations *visible*, not necessarily *dominant* ("disposable-income leaderboard" risk, design doc §4 closing note). Full normalization/weighting is still a product decision for the M0 eval to settle; the `1 / 2x / 5x` weighting here is a proposal to bring to the team, not a resolved answer.
 
 **Trust-layer dependency (design doc invariant 6)**: the delivered-order term is only as trustworthy as order-status transitions, and today `PUT /api/orders/:id/status` accepts any transition from any caller with no guard (Project 1a finding, `server/routes/orders.js:184`). Per `docs/MILESTONES.md:8` ("Order: M1, then M2"), M1 lands first — this plan assumes the leaderboard is built after M1's guarded transitions merge, or explicitly ships with a documented caveat that scores are unverified until then.
 
@@ -192,4 +195,4 @@ All route-level tests drive the caller identity via supertest's `.set('x-test-us
 
 ## 8. Open questions for the M2 GitHub issue (not resolved by this plan)
 
-- Global-board refresh mechanism: scheduled recompute job vs. refresh-triggered-on-write (e.g., recompute a user's score contribution whenever their points/badges/delivered-count changes) vs. refresh-on-read-if-stale with a TTL. Any of these satisfy invariant 8; this is still pending a team decision — this plan doesn't pick one.
+- **Global-board cache (design doc invariant 8) — deferred to Project 3, known limit.** Issue #31 shipped the global board as a live per-request scan (`getAllCustomerIds()` + `loadUserScoreDataForIds()` over every customer, in `server/routes/leaderboard.js`), not the periodically refreshed top-K snapshot invariant 8 specifies. This is fine at course scale (the scale this project runs at) but is O(N) reads per request and will not scale past it — invariant 8's warning ("course-scale seed data makes the naive version work; the policy exists so nobody 'optimizes' by storing scores as truth") is exactly the situation this leaves in place. Carrying this forward rather than closing it: Project 3 should either add the cached top-K snapshot (badgeService-style, per the design doc) or explicitly re-affirm the live scan is still acceptable at whatever scale Project 3 runs at. The refresh-mechanism question itself (scheduled recompute vs. refresh-on-write vs. refresh-on-read-if-stale with a TTL) remains unresolved and undecided by this plan.

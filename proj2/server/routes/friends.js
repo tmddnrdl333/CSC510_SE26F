@@ -10,7 +10,19 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// POST /api/friends/request  { toUserId }
+/**
+ * POST /api/friends/request
+ * Sends a friend request from the caller (`req.user.id`) to `toUserId`.
+ *
+ * @body {string} toUserId
+ * @returns {201} `{ friendship }` - newly created, `pending`.
+ * @returns {200} `{ friendship }` - idempotent: a `pending` request between
+ *   this pair already existed (either direction).
+ * @returns {400} Missing `toUserId`; `toUserId === req.user.id` (self-request);
+ *   or the pair is already `accepted`.
+ * @returns {404} `toUserId` does not resolve to a real user.
+ * @returns {401} No/invalid `req.user.id` (auth stub).
+ */
 router.post('/request', async (req, res) => {
   try {
     const callerId = req.user.id;
@@ -53,7 +65,20 @@ router.post('/request', async (req, res) => {
   }
 });
 
-// POST /api/friends/accept  { requestId } or { otherUserId }
+/**
+ * POST /api/friends/accept
+ * Accepts a pending friend request. Only the non-requester (the recipient)
+ * may accept, and only if the caller is actually a party to the friendship.
+ *
+ * @body {string} [requestId] - The friendship doc id directly.
+ * @body {string} [otherUserId] - Resolved to the same id via `Friendship.computeId`.
+ *   Exactly one of `requestId`/`otherUserId` must be given.
+ * @returns {200} `{ friendship }` - now `accepted`.
+ * @returns {400} Neither `requestId` nor `otherUserId` given; or already `accepted`.
+ * @returns {403} Caller is not a party to this friendship, or is the requester.
+ * @returns {404} No friendship doc at that id.
+ * @returns {401} No/invalid `req.user.id` (auth stub).
+ */
 router.post('/accept', async (req, res) => {
   try {
     const callerId = req.user.id;
@@ -87,7 +112,19 @@ router.post('/accept', async (req, res) => {
   }
 });
 
-// POST /api/friends/reject  { requestId }
+/**
+ * POST /api/friends/reject
+ * Deletes a pending friend request. Only the recipient may reject (not the
+ * requester, who would cancel it a different way if that's ever added).
+ *
+ * @body {string} requestId - The friendship doc id.
+ * @returns {200} `{ message }` - deleted.
+ * @returns {400} Missing `requestId`, or the friendship isn't `pending`.
+ * @returns {403} Caller is not a party to this friendship, or is the requester.
+ * @returns {404} No friendship doc at that id (idempotent: treated as
+ *   already-handled, not an error).
+ * @returns {401} No/invalid `req.user.id` (auth stub).
+ */
 router.post('/reject', async (req, res) => {
   try {
     const callerId = req.user.id;
@@ -121,7 +158,15 @@ router.post('/reject', async (req, res) => {
   }
 });
 
-// GET /api/friends/list
+/**
+ * GET /api/friends/list
+ * Lists the caller's accepted friendships, hydrated with each friend's
+ * display name (one extra `users` read per friend).
+ *
+ * @returns {200} `{ friends: [{ userId, name, friendshipId, acceptedAt }] }`
+ *   - empty array if the caller has no accepted friendships.
+ * @returns {401} No/invalid `req.user.id` (auth stub).
+ */
 router.get('/list', async (req, res) => {
   try {
     const callerId = req.user.id;
