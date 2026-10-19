@@ -35,3 +35,29 @@
   margin-top: 8px;
   max-width: 460px;
 }
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th {
+  text-align: left;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.leaderboard-table td {
+  padding: 12px;
+  color: #0f172a;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.leaderboard-row.current-user {
+  background: #fef3c7;
+  font-weight: 600;
+}
