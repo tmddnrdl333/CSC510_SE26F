@@ -12,7 +12,8 @@ jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').
 const request = require('supertest');
 const express = require('express');
 const { db } = require('../server/config/firebase');
-const { authStub } = require('../server/middleware/authStub');
+const { bearer } = require('./helpers/authToken');
+const { requireAuth } = require('../server/middleware/auth');
 const teamsRoutes = require('../server/routes/teams');
 const Friendship = require('../server/models/Friendship');
 
@@ -43,7 +44,7 @@ function seedTeam(id, ownerId, memberIds, overrides = {}) {
   }));
 }
 
-const as = (userId) => ({ 'x-test-user-id': userId });
+const as = (userId) => bearer(userId, 'customer');
 
 describe('M3: teams create/join/leave/me (#14)', () => {
   let server;
@@ -51,8 +52,8 @@ describe('M3: teams create/join/leave/me (#14)', () => {
   beforeAll(() => {
     const app = express();
     app.use(express.json());
-    // Mirrors server/index.js: app.use('/api/teams', authStub, teamsRoutes)
-    app.use('/api/teams', authStub, teamsRoutes);
+    // Mirrors server/index.js: app.use('/api/teams', requireAuth, teamsRoutes)
+    app.use('/api/teams', requireAuth, teamsRoutes);
     server = app.listen(0);
   });
 

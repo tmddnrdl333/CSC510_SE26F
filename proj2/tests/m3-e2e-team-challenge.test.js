@@ -18,12 +18,13 @@ jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').
 const request = require('supertest');
 const express = require('express');
 const { db } = require('../server/config/firebase');
-const { authStub } = require('../server/middleware/authStub');
+const { bearer } = require('./helpers/authToken');
+const { requireAuth } = require('../server/middleware/auth');
 const friendsRoutes = require('../server/routes/friends');
 const teamsRoutes = require('../server/routes/teams');
 const challengesRoutes = require('../server/routes/challenges');
 
-const as = (userId) => ({ 'x-test-user-id': userId });
+const as = (userId) => bearer(userId, 'customer');
 
 function seedUser(id) {
   db.__seed('users', id, {
@@ -51,9 +52,9 @@ describe('M3 E2E: a team completes a weekly challenge (#20)', () => {
     const app = express();
     app.use(express.json());
     // Mirrors server/index.js mounting exactly.
-    app.use('/api/friends', authStub, friendsRoutes);
-    app.use('/api/teams', authStub, teamsRoutes);
-    app.use('/api/challenges', authStub, challengesRoutes);
+    app.use('/api/friends', requireAuth, friendsRoutes);
+    app.use('/api/teams', requireAuth, teamsRoutes);
+    app.use('/api/challenges', requireAuth, challengesRoutes);
     server = app.listen(0);
   });
 

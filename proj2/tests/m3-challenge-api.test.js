@@ -13,10 +13,11 @@ jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').
 const request = require('supertest');
 const express = require('express');
 const { db } = require('../server/config/firebase');
-const { authStub } = require('../server/middleware/authStub');
+const { bearer } = require('./helpers/authToken');
+const { requireAuth } = require('../server/middleware/auth');
 const challengesRoutes = require('../server/routes/challenges');
 
-const as = (userId) => ({ 'x-test-user-id': userId });
+const as = (userId) => bearer(userId, 'customer');
 
 function seedUser(id, teamId = null) {
   db.__seed('users', id, { id, email: `${id}@x.com`, password: 'pw', role: 'customer', profile: { name: id }, teamId });
@@ -46,8 +47,8 @@ describe('M3: challenge progress API (#16)', () => {
   beforeAll(() => {
     const app = express();
     app.use(express.json());
-    // Mirrors server/index.js: app.use('/api/challenges', authStub, challengesRoutes)
-    app.use('/api/challenges', authStub, challengesRoutes);
+    // Mirrors server/index.js: app.use('/api/challenges', requireAuth, challengesRoutes)
+    app.use('/api/challenges', requireAuth, challengesRoutes);
     server = app.listen(0);
   });
 

@@ -1,6 +1,5 @@
 // M2: Friendships routes (issue #28).
-// Source under test: server/routes/friends.js, mounted behind the temporary
-// auth stub (server/middleware/authStub.js) exactly as server/index.js does.
+// Source under test: server/routes/friends.js, mounted behind requireAuth exactly as server/index.js does.
 // Contract: proj2/docs/plans/m2-leaderboard.md §4, §5, §7.
 
 jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
@@ -8,7 +7,8 @@ jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').
 const request = require('supertest');
 const express = require('express');
 const { db } = require('../server/config/firebase');
-const { authStub } = require('../server/middleware/authStub');
+const { bearer } = require('./helpers/authToken');
+const { requireAuth } = require('../server/middleware/auth');
 const friendsRoutes = require('../server/routes/friends');
 const Friendship = require('../server/models/Friendship');
 
@@ -37,8 +37,8 @@ describe('UC28 (M2): Friendships', () => {
   beforeAll(() => {
     const app = express();
     app.use(express.json());
-    // Mirrors server/index.js: app.use('/api/friends', authStub, friendsRoutes)
-    app.use('/api/friends', authStub, friendsRoutes);
+    // Mirrors server/index.js: app.use('/api/friends', requireAuth, friendsRoutes)
+    app.use('/api/friends', requireAuth, friendsRoutes);
     server = app.listen(0);
   });
 
@@ -53,7 +53,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/request')
-        .set('x-test-user-id', 'alice')
+        .set(bearer('alice', 'customer'))
         .send({ toUserId: 'bob' });
 
       expect(res.status).toBe(201);
@@ -70,7 +70,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/request')
-        .set('x-test-user-id', 'alice')
+        .set(bearer('alice', 'customer'))
         .send({ toUserId: 'alice' });
 
       expect(res.status).toBe(400);
@@ -84,7 +84,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/request')
-        .set('x-test-user-id', 'alice')
+        .set(bearer('alice', 'customer'))
         .send({ toUserId: 'bob' });
 
       expect(res.status).toBe(400);
@@ -97,7 +97,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/request')
-        .set('x-test-user-id', 'alice')
+        .set(bearer('alice', 'customer'))
         .send({ toUserId: 'bob' });
 
       expect(res.status).toBe(200);
@@ -113,13 +113,13 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/request')
-        .set('x-test-user-id', 'alice')
+        .set(bearer('alice', 'customer'))
         .send({ toUserId: 'nobody' });
 
       expect(res.status).toBe(404);
     });
 
-    test('extension: no x-test-user-id header -> 401', async () => {
+    test('extension: no auth token -> 401', async () => {
       const res = await request(server)
         .post('/api/friends/request')
         .send({ toUserId: 'bob' });
@@ -136,7 +136,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/accept')
-        .set('x-test-user-id', 'bob')
+        .set(bearer('bob', 'customer'))
         .send({ requestId: pending.id });
 
       expect(res.status).toBe(200);
@@ -154,7 +154,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/accept')
-        .set('x-test-user-id', 'alice')
+        .set(bearer('alice', 'customer'))
         .send({ requestId: pending.id });
 
       expect(res.status).toBe(403);
@@ -165,7 +165,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/accept')
-        .set('x-test-user-id', 'bob')
+        .set(bearer('bob', 'customer'))
         .send({ requestId: 'nonexistent_id' });
 
       expect(res.status).toBe(404);
@@ -179,7 +179,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/accept')
-        .set('x-test-user-id', 'bob')
+        .set(bearer('bob', 'customer'))
         .send({ requestId: pending.id });
 
       expect(res.status).toBe(400);
@@ -193,7 +193,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/accept')
-        .set('x-test-user-id', 'carol')
+        .set(bearer('carol', 'customer'))
         .send({ requestId: pending.id });
 
       expect(res.status).toBe(403);
@@ -212,7 +212,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/reject')
-        .set('x-test-user-id', 'bob')
+        .set(bearer('bob', 'customer'))
         .send({ requestId: pending.id });
 
       expect(res.status).toBe(200);
@@ -228,7 +228,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/reject')
-        .set('x-test-user-id', 'alice')
+        .set(bearer('alice', 'customer'))
         .send({ requestId: pending.id });
 
       expect(res.status).toBe(403);
@@ -246,7 +246,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/reject')
-        .set('x-test-user-id', 'carol')
+        .set(bearer('carol', 'customer'))
         .send({ requestId: pending.id });
 
       expect(res.status).toBe(403);
@@ -264,7 +264,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .post('/api/friends/reject')
-        .set('x-test-user-id', 'bob') // the recipient -- would otherwise be allowed to reject
+        .set(bearer('bob', 'customer')) // the recipient -- would otherwise be allowed to reject
         .send({ requestId: accepted.id });
 
       expect(res.status).toBe(400);
@@ -288,7 +288,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .get('/api/friends/list')
-        .set('x-test-user-id', 'alice');
+        .set(bearer('alice', 'customer'));
 
       expect(res.status).toBe(200);
       expect(res.body.friends).toHaveLength(2);
@@ -311,7 +311,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .get('/api/friends/list')
-        .set('x-test-user-id', 'alice');
+        .set(bearer('alice', 'customer'));
 
       expect(res.status).toBe(200);
       expect(res.body.friends).toHaveLength(1);
@@ -323,7 +323,7 @@ describe('UC28 (M2): Friendships', () => {
 
       const res = await request(server)
         .get('/api/friends/list')
-        .set('x-test-user-id', 'alice');
+        .set(bearer('alice', 'customer'));
 
       expect(res.status).toBe(200);
       expect(res.body.friends).toEqual([]);

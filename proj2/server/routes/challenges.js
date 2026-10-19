@@ -6,7 +6,7 @@
 // Progress is derived at read time from orders (design doc §4 invariant 1);
 // the only stored state is the reward ledger (challengeProgress).
 //
-// Identity via req.user.id (authStub today, M1's requireAuth after it merges).
+// Identity via req.user.id (requireAuth, server/middleware/auth.js).
 
 const express = require('express');
 const { db } = require('../config/firebase');

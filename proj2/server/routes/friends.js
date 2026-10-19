@@ -1,7 +1,7 @@
 // server/routes/friends.js
 // Contract: proj2/docs/plans/m2-leaderboard.md §5.
-// Caller identity comes from req.user.id, set upstream by the temporary
-// auth stub (server/middleware/authStub.js) mounted ahead of this router in
+// Caller identity comes from req.user.id, set upstream by M1's requireAuth
+// middleware (server/middleware/auth.js)
 // server/index.js -- never from the request body/query. See the plan doc
 // for why.
 const express = require('express');
