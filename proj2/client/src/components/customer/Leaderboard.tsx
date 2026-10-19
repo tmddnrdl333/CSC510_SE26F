@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import './Leaderboard.css';
+
+type LeaderboardScope = 'global' | 'friends';
 
 interface LeaderboardEntry {
   userId: string;
@@ -15,7 +17,7 @@ interface LeaderboardEntry {
 }
 
 interface LeaderboardResponse {
-  scope: 'global' | 'friends';
+  scope: LeaderboardScope;
   entries: LeaderboardEntry[];
 }
 
@@ -24,16 +26,17 @@ const defaultResponse: LeaderboardResponse = {
   entries: [],
 };
 
-// Toggle lands in piece 4; loading/empty/error states are polished in piece 5.
+// Loading/empty/error states are polished in piece 5.
 const Leaderboard: React.FC = () => {
   const { user } = useAuth();
   const customerId = user?.id;
+  const [scope, setScope] = useState<LeaderboardScope>('global');
 
   const { data = defaultResponse, isLoading } = useQuery<LeaderboardResponse>({
-    queryKey: ['leaderboard', 'global'],
+    queryKey: ['leaderboard', scope],
     enabled: !!customerId,
     queryFn: async () => {
-      const response = await api.get('/leaderboard');
+      const response = await api.get('/leaderboard', { params: scope === 'friends' ? { scope } : {} });
       return response.data as LeaderboardResponse;
     },
   });
@@ -47,6 +50,26 @@ const Leaderboard: React.FC = () => {
           <p className="leaderboard-subtitle">
             See how you stack up on points, badges, and donation impact.
           </p>
+        </div>
+        <div className="leaderboard-toggle" role="tablist" aria-label="Leaderboard scope">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={scope === 'global'}
+            className={scope === 'global' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScope('global')}
+          >
+            Global
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={scope === 'friends'}
+            className={scope === 'friends' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScope('friends')}
+          >
+            Friends
+          </button>
         </div>
       </div>
 

@@ -36,6 +36,32 @@
   max-width: 460px;
 }
 
+.leaderboard-toggle {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 4px;
+  height: fit-content;
+}
+
+.toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #475569;
+  cursor: pointer;
+}
+
+.toggle-btn.active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+}
+
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;
