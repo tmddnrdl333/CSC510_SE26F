@@ -7,9 +7,7 @@
 [![TypeScript](https://img.shields.io/badge/types-tsc%20--noEmit-3178c6.svg)](client/tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](docs/LICENSE.md)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](docs/CONTRIBUTING.md)
-<!-- TODO(DOI): after linking this repo on Zenodo and cutting a GitHub release,
-     replace this comment with the Zenodo DOI badge it gives you:
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
+[![DOI](https://zenodo.org/badge/1349823474.svg)](https://zenodo.org/badge/latestdoi/1349823474)
 
 <!-- TODO(teaser): 12-30s teaser video goes RIGHT HERE, above the title. -->
 
