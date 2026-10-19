@@ -3,6 +3,7 @@ module.exports = {
   testMatch: ['**/tests/**/*.test.js'],
   collectCoverageFrom: [
     'src/**/*.js',
+    'server/**/*.js',
     '!**/node_modules/**',
     '!**/coverage/**',
     '!jest.config.js'
@@ -12,9 +13,9 @@ module.exports = {
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/client/',
-    '/server/',
     '/coverage/',
-    '/tests/'
+    '/tests/',
+    'server/index.js'
   ]
 };
 

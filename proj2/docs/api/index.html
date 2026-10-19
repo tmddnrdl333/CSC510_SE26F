@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><!-- CI/CD and quality badges (live — each click opens the real result) -->
+<p><a href="https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml"><img src="https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
+<a href="https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/tests-329%20passing%20%2B%204%20documented%20reds-brightgreen.svg" alt="Tests"></a>
+<a href="https://codecov.io/github/tmddnrdl333/CSC510_SE26F"><img src="https://codecov.io/github/tmddnrdl333/CSC510_SE26F/graph/badge.svg" alt="codecov"></a>
+<a href=".eslintrc.json"><img src="https://img.shields.io/badge/lint-ESLint-blue.svg" alt="ESLint"></a>
+<a href=".prettierrc"><img src="https://img.shields.io/badge/code_style-prettier-ff69b4.svg" alt="Prettier"></a>
+<a href="client/tsconfig.json"><img src="https://img.shields.io/badge/types-tsc%20--noEmit-3178c6.svg" alt="TypeScript"></a>
+<a href="docs/LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+<a href="docs/CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions welcome"></a></p>
+<!-- TODO(DOI): after linking this repo on Zenodo and cutting a GitHub release,
+     replace this comment with the Zenodo DOI badge it gives you:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
+<!-- TODO(teaser): 12-30s teaser video goes RIGHT HERE, above the title. -->
+<h1>Hungry Wolf 🐺</h1>
+<p><strong>Not Just Food, A Quest Worth Savoring</strong></p>
+<p>A gamified food-delivery platform that connects customers, restaurants, and delivery partners while supporting local eateries and contributing to a Meal-for-a-Meal donation program.</p>
+<p><strong>Docs &amp; guides:</strong> <a href="docs/api/index.html">API docs (generated)</a> · <a href="docs/INSTALL.md">Install</a> · <a href="docs/CONTRIBUTING.md">Contributing / adding a challenge type</a> · <a href="docs/MILESTONES.md">Milestones</a> · <a href="docs/DB_DESIGN_M2_M3.md">DB design</a> · <a href="docs/AI_USE.md">AI use disclosure</a> · <a href="docs/THIRD_PARTY_LIBRARIES.md">Third-party licenses</a></p>
+<!-- TODO(walkthrough): link the 2-5 min feature walk-through video here. -->
+<h2>🎯 Project Overview</h2>
+<p>Hungry Wolf is a full-stack web application built with modern technologies to create an engaging food delivery experience. The platform gamifies the ordering process with points, rewards, and social impact features.</p>
+<h2>🏗️ Architecture</h2>
+<pre class="prettyprint source"><code>hungry-wolf/
+├── frontend/          # React frontend
+├── backend/          # Node.js backend
+└── docs/           # Documentation
+</code></pre>
+<h2>🚀 Quick Start</h2>
+<ol>
+<li>
+<p><strong>Install dependencies:</strong></p>
+<pre class="prettyprint source lang-bash"><code>npm run install-all
+</code></pre>
+</li>
+<li>
+<p><strong>Start development servers:</strong></p>
+<pre class="prettyprint source lang-bash"><code>npm run dev
+</code></pre>
+</li>
+<li>
+<p><strong>Access the application:</strong></p>
+<ul>
+<li>Frontend: http://localhost:3000</li>
+<li>Backend API: http://localhost:5001</li>
+</ul>
+</li>
+<li>
+<p><strong>Test &amp; Coverage</strong></p>
+<pre class="prettyprint source lang-bash"><code>npm run test
+</code></pre>
+</li>
+</ol>
+<h2>📋 Milestones</h2>
+<p>Live progress, one issue per step: <a href="https://github.com/tmddnrdl333/CSC510_SE26F/milestones">GitHub milestones</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M0: Repeat-order-rate eval</td>
+<td>✅ Merged (<a href="https://github.com/tmddnrdl333/CSC510_SE26F/pull/11">#11</a>)</td>
+</tr>
+<tr>
+<td>M1: Trust layer</td>
+<td>🔍 In review (<a href="https://github.com/tmddnrdl333/CSC510_SE26F/pull/51">#51</a>)</td>
+</tr>
+<tr>
+<td>M2: Social leaderboard</td>
+<td>🚧 In progress (<a href="https://github.com/tmddnrdl333/CSC510_SE26F/pull/35">#35</a>)</td>
+</tr>
+<tr>
+<td>M3: Challenges engine + friend team challenges</td>
+<td>🚧 In progress</td>
+</tr>
+</tbody>
+</table>
+<h3>M0: Repeat-order-rate eval ✅</h3>
+<p>Hypothesis: the weekly repeat-order rate rises by at least 20% with the leaderboard, compared with a no-leaderboard baseline.</p>
+<ul>
+<li>[x] <code>scripts/m0-eval.js</code>: computes the weekly repeat-order rate per group and prints the lift and PASS/FAIL (<code>npm run eval:m0</code>)</li>
+<li>[x] Seeded synthetic order generator, so reruns give the same number. Seed 42: <strong>+24.9% lift → PASS</strong>. The lift is simulated, not hard-coded, so the eval can fail.</li>
+<li>[x] Runs in CI on every push, and on a pilot dataset (<code>npm run eval:m0:pilot</code>)</li>
+<li>[x] Issue template for recording a persevere / re-plan / descope decision if it fails</li>
+</ul>
+<h3>M1: Trust layer 🔍</h3>
+<p>The leaderboard and challenges rank points, deliveries and donations, so those numbers must not be forgeable.</p>
+<ul>
+<li>[x] Passwords hashed with bcrypt; login returns a JWT; <code>requireAuth</code> / <code>requireRole</code> middleware (<a href="docs/CONTRIBUTING.md">how to protect a route</a>)</li>
+<li>[x] Only the assigned delivery partner can pick up, deliver or release an order (403 for anyone else). Each delivery pays out once.</li>
+<li>[x] Claiming an order, redeeming points and completing a delivery run in Firestore transactions (no double-claim, no double-spend)</li>
+<li>[x] Points: 10% of the bill, 15% at Local Legend restaurants</li>
+<li>[x] Order status follows the kitchen workflow; only the restaurant that owns an order can move it</li>
+<li>[x] Donation counter and account edits require login</li>
+<li>[x] 85 new tests (150 → 235 total); tests that recorded these bugs now check the fixes</li>
+</ul>
+<h3>M2: Social leaderboard 🚧</h3>
+<ul>
+<li>[x] Friendships: send / accept / reject / list routes and a <code>getFriends</code> helper (in review)</li>
+<li>[ ] Combined score of points, badges and donations</li>
+<li>[ ] <code>GET /api/leaderboard</code>, global and <code>?scope=friends</code></li>
+<li>[ ] Leaderboard page with a Global/Friends toggle</li>
+</ul>
+<h3>M3: Challenges engine + friend team challenges 🚧</h3>
+<p>Friends form a team and take on weekly challenges together, e.g. &quot;15 team orders this week = 5 extra donated meals&quot;.</p>
+<ul>
+<li>[x] Challenge definitions and a pure evaluator: a new challenge type is a new definition, not new code</li>
+<li>[x] Transaction support in the test Firestore double (for exactly-once rewards)</li>
+<li>[ ] Teams: create / join / leave / list</li>
+<li>[ ] Exactly-once reward payout, progress API, team progress page</li>
+<li>[ ] CONTRIBUTING tutorial: how to add a challenge type</li>
+</ul>
+<h2>🛠️ Tech Stack</h2>
+<ul>
+<li><strong>Frontend:</strong> React 18, React Router, React Query</li>
+<li><strong>Backend:</strong> Node.js, Express.js</li>
+<li><strong>Database:</strong> Firebase Firestore</li>
+<li><strong>Authentication:</strong> Firebase Auth</li>
+<li><strong>Styling:</strong> CSS Modules, Responsive Design</li>
+<li><strong>State Management:</strong> React Query + Context API</li>
+</ul>
+<h2>👥 User Roles</h2>
+<h3>Customer</h3>
+<ul>
+<li>Browse restaurants and menus</li>
+<li>Add items to cart and place orders</li>
+<li>Track order status</li>
+<li>Rate restaurants</li>
+<li>Earn and redeem points</li>
+</ul>
+<h3>Restaurant</h3>
+<ul>
+<li>Manage menu items</li>
+<li>Accept/reject orders</li>
+<li>Update order status</li>
+<li>View customer ratings</li>
+</ul>
+<h3>Delivery Partner</h3>
+<ul>
+<li>View assigned orders</li>
+<li>Update delivery status</li>
+<li>Track earnings</li>
+</ul>
+<h2>🎮 Gamification Features</h2>
+<ul>
+<li><strong>Points System:</strong> Earn points for orders (10% of bill)</li>
+<li><strong>Local Legends:</strong> Extra points (15%) for supporting local restaurants (Local Legends)</li>
+<li><strong>Social Impact:</strong> Meal-for-a-Meal donation program</li>
+</ul>
+<h2>🔧 Development</h2>
+<h3>Project Structure</h3>
+<ul>
+<li>Modular architecture for easy extension</li>
+<li>Clear separation of concerns</li>
+<li>Comprehensive documentation</li>
+<li>Type-safe development</li>
+</ul>
+<h3>For Future Teams</h3>
+<p>This project is designed to be easily extensible. Key areas for future development:</p>
+<ul>
+<li>Payment integration</li>
+<li>Real-time tracking and notifications</li>
+<li>Advanced analytics</li>
+<li>Mobile app development</li>
+</ul>
+<h2>📚 Documentation</h2>
+<p>See the <code>docs/</code> directory for detailed documentation:</p>
+<ul>
+<li>API documentation</li>
+<li>Installation guidelines</li>
+<li>Code of conduct</li>
+</ul>
+<h2>🤝 Contributing</h2>
+<p>This project follows software sustainability principles:</p>
+<ul>
+<li>Clear code documentation</li>
+<li>Modular architecture</li>
+<li>Comprehensive testing</li>
+<li>Easy setup and deployment</li>
+</ul>
+<h2>📄 License</h2>
+<p>MIT License - see LICENSE file for details</p>
+<h3>🔗 Live Demo</h3>
+<p>You can see the working demo using the link below:<br>
+<a href="https://drive.google.com/file/d/1R85vYgjbKL3zBZsimE7ruI46UfgAdN8x/view?usp=drive_link">View Live Demo for Project 2</a></p>
+<p><a href="https://youtu.be/l6SIhW_ra_A">View Live demo for Project 3</a></p>
+<hr>
+<p>This repository uses continuous integration (GitHub Actions), linting (ESLint), automated testing (Jest), and coverage tracking (Codecov). All badges above are live and auto-updated on each commit.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Friendship.html">Friendship</a></li></ul><h3>Global</h3><ul><li><a href="global.html#RESTAURANT_SETTABLE_STATUSES">RESTAURANT_SETTABLE_STATUSES</a></li><li><a href="global.html#buildChallengeProgressId">buildChallengeProgressId</a></li><li><a href="global.html#buildEntries">buildEntries</a></li><li><a href="global.html#canRestaurantTransition">canRestaurantTransition</a></li><li><a href="global.html#claimChallengeReward">claimChallengeReward</a></li><li><a href="global.html#computeOrderPoints">computeOrderPoints</a></li><li><a href="global.html#computeScore">computeScore</a></li><li><a href="global.html#countDeliveredOrders">countDeliveredOrders</a></li><li><a href="global.html#evaluateChallenges">evaluateChallenges</a></li><li><a href="global.html#filterTeamWeekOrders">filterTeamWeekOrders</a></li><li><a href="global.html#getAllCustomerIds">getAllCustomerIds</a></li><li><a href="global.html#hashPassword">hashPassword</a></li><li><a href="global.html#hydrateEntries">hydrateEntries</a></li><li><a href="global.html#isHashed">isHashed</a></li><li><a href="global.html#loadTeamContext">loadTeamContext</a></li><li><a href="global.html#loadUserScoreData">loadUserScoreData</a></li><li><a href="global.html#loadUserScoreDataForIds">loadUserScoreDataForIds</a></li><li><a href="global.html#parseLimit">parseLimit</a></li><li><a href="global.html#rankUsers">rankUsers</a></li><li><a href="global.html#rejectIfBodyIdMismatch">rejectIfBodyIdMismatch</a></li><li><a href="global.html#signToken">signToken</a></li><li><a href="global.html#sumBadgeTiers">sumBadgeTiers</a></li><li><a href="global.html#verifyPassword">verifyPassword</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Oct 19 2026 17:05:16 GMT-0400 (Eastern Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

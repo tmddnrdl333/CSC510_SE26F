@@ -1,0 +1,7 @@
+{
+  "source": {
+    "include": ["server/services", "server/models", "server/middleware", "server/routes", "src"],
+    "includePattern": ".+\\.js$"
+  },
+  "opts": { "destination": "docs/api", "recurse": true, "readme": "README.md" }
+}
