@@ -132,18 +132,30 @@ describe('M3: challenge progress API (#16)', () => {
       expect((await db.collection('settings').doc('donations').get()).data().counter).toBe(100);
     });
 
-    test('extension: unknown definition -> 404; badge-type -> 501 until #17; no team -> 400', async () => {
+    test('extension: unknown definition -> 404; no team -> 400', async () => {
       seedTeam('t1', 'alice', ['alice', 'bob', 'carol']);
       seedDeliveredOrders(6, ['alice', 'bob', 'carol']);
 
       expect((await request(server).post('/api/challenges/nope/claim').set(as('alice'))).status).toBe(404);
 
-      const badge = await request(server).post('/api/challenges/weekly-whole-squad/claim').set(as('alice'));
-      expect(badge.status).toBe(501);
-      expect(badge.body.code).toBe('REWARD_TYPE_NOT_IMPLEMENTED');
-
       seedUser('loner');
       expect((await request(server).post('/api/challenges/weekly-team-orders-15/claim').set(as('loner'))).status).toBe(400);
+    });
+
+    test('badge challenge (#17): claim grants users.challengeBadges to every member', async () => {
+      seedTeam('t1', 'alice', ['alice', 'bob', 'carol']);
+      seedDeliveredOrders(6, ['alice', 'bob', 'carol']); // 3 distinct members -> squad achieved
+
+      const res = await request(server).post('/api/challenges/weekly-whole-squad/claim').set(as('alice'));
+      expect(res.status).toBe(200);
+      expect(res.body.rewardRef).toBe('badge:team_player');
+
+      for (const m of ['alice', 'bob', 'carol']) {
+        const user = await db.collection('users').doc(m).get();
+        expect(user.data().challengeBadges.team_player).toBeDefined();
+      }
+      // donation counter untouched by badge rewards
+      expect((await db.collection('settings').doc('donations').get()).data().counter).toBe(100);
     });
   });
 });

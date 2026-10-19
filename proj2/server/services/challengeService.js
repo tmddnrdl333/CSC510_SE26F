@@ -13,6 +13,11 @@
 //     creation survive later definition changes (design doc §2.3) — and its
 //     other fields are preserved (merge write).
 //
+// Reward types: 'donatedMeals' increments the global counter + writes a
+// donationHistory audit row; 'badge' grants users.challengeBadges.<badgeId>
+// to every team member (separate from the badgeService-owned users.badges
+// snapshot). Both happen inside the same exactly-once transaction.
+//
 // Precedence: an already-rewarded claim returns `alreadyRewarded` even if the
 // supplied orders no longer evaluate as achieved (statuses can be flipped back
 // while transitions are unguarded — invariant 6), so a replay never surfaces
@@ -57,21 +62,32 @@ async function claimChallengeReward({
     throw codedError('UNKNOWN_CHALLENGE', `Unknown challenge definition "${definitionId}"`);
   }
 
-  // Badge-type rewards are wired in #17; refuse loudly rather than marking a
-  // reward paid without granting anything.
-  if (!definition.reward || definition.reward.type !== 'donatedMeals') {
+  // Definitions are added without touching this service ("definition-only"
+  // extensibility), so malformed rewards must be rejected before they can
+  // touch any stored state. Two reward types exist (#15 meals, #17 badges);
+  // anything else refuses loudly rather than marking a reward paid without
+  // granting anything.
+  const rewardType = definition.reward && definition.reward.type;
+  let rewardAmount = 0;
+  if (rewardType === 'donatedMeals') {
+    rewardAmount = Number(definition.reward.amount);
+    if (!Number.isInteger(rewardAmount) || rewardAmount <= 0) {
+      throw codedError(
+        'INVALID_REWARD',
+        `Definition "${definitionId}" has an invalid reward.amount (${definition.reward.amount})`
+      );
+    }
+  } else if (rewardType === 'badge') {
+    if (typeof definition.reward.badgeId !== 'string' || !definition.reward.badgeId.trim()) {
+      throw codedError(
+        'INVALID_REWARD',
+        `Definition "${definitionId}" has a badge reward without a badgeId`
+      );
+    }
+  } else {
     throw codedError(
       'REWARD_TYPE_NOT_IMPLEMENTED',
-      `Reward type "${definition.reward && definition.reward.type}" is not implemented yet (see issue #17)`
-    );
-  }
-  // Definitions are added without touching this service ("definition-only"
-  // extensibility), so a malformed amount must not reach the global counter.
-  const rewardAmount = Number(definition.reward.amount);
-  if (!Number.isInteger(rewardAmount) || rewardAmount <= 0) {
-    throw codedError(
-      'INVALID_REWARD',
-      `Definition "${definitionId}" has an invalid reward.amount (${definition.reward.amount})`
+      `Reward type "${rewardType}" is not implemented`
     );
   }
 
@@ -116,9 +132,50 @@ async function claimChallengeReward({
       );
     }
 
-    const counterDoc = await txn.get(counterRef);
-    const currentCounter = counterDoc.exists ? (counterDoc.data().counter || 0) : 0;
     const now = new Date();
+    let rewardRef;
+
+    if (rewardType === 'donatedMeals') {
+      const counterDoc = await txn.get(counterRef);
+      const currentCounter = counterDoc.exists ? (counterDoc.data().counter || 0) : 0;
+      rewardRef = auditId;
+      txn.set(counterRef, {
+        counter: currentCounter + rewardAmount,
+        lastUpdated: now,
+      }, { merge: true });
+      txn.set(auditRef, {
+        id: auditId,
+        amount: rewardAmount,
+        description: `Team challenge reward: ${definition.label} (${teamId}, ${weekKey})`,
+        challengeProgressId: progressId,
+        createdAt: now,
+      });
+    } else {
+      // Badge reward (#17): grant to every team member. Stored in the
+      // SEPARATE users.challengeBadges field — never in users.badges, which
+      // badgeService recomputes from orders and overwrites wholesale (the
+      // snapshot would silently swallow anything we put there).
+      const badgeId = definition.reward.badgeId;
+      rewardRef = `badge:${badgeId}`;
+      const memberRefs = (memberIds || []).map((id) => db.collection('users').doc(id));
+      const memberDocs = await Promise.all(memberRefs.map((ref) => txn.get(ref)));
+      memberDocs.forEach((doc, i) => {
+        if (!doc.exists) {
+          console.warn(`challengeService: member ${memberIds[i]} not found during badge grant`);
+          return;
+        }
+        txn.update(memberRefs[i], {
+          [`challengeBadges.${badgeId}`]: {
+            badgeId,
+            definitionId,
+            teamId,
+            weekKey,
+            awardedAt: now,
+          },
+          updatedAt: now,
+        });
+      });
+    }
 
     // merge: preserve createdAt and any fields the progress API stored.
     txn.set(progressRef, {
@@ -129,28 +186,17 @@ async function claimChallengeReward({
       target: effectiveTarget,
       status: 'rewarded',
       rewardedAt: now,
-      rewardRef: auditId,
+      rewardRef,
       updatedAt: now,
       ...(existing ? {} : { createdAt: now }),
     }, { merge: true });
-    txn.set(counterRef, {
-      counter: currentCounter + rewardAmount,
-      lastUpdated: now,
-    }, { merge: true });
-    txn.set(auditRef, {
-      id: auditId,
-      amount: rewardAmount,
-      description: `Team challenge reward: ${definition.label} (${teamId}, ${weekKey})`,
-      challengeProgressId: progressId,
-      createdAt: now,
-    });
 
     return {
       rewarded: true,
       alreadyRewarded: false,
       progressId,
       reward: { ...definition.reward },
-      rewardRef: auditId,
+      rewardRef,
     };
   });
 }

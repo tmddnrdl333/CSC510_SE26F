@@ -191,15 +191,68 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
     expect(counter.data().counter).toBe(100);
   });
 
-  test('badge-type reward refuses loudly until #17 wires it', async () => {
-    // weekly-whole-squad needs 3 distinct ordering members and pays a badge.
-    await expect(claim({ definitionId: 'weekly-whole-squad', orders: [
+  describe('badge rewards (#17)', () => {
+    const squadOrders = () => [
       ...achievingOrders(),
       { id: 'm3-order', customerId: 'm3', timestamp: '2026-10-15T18:00:00.000Z', totalAmount: 10, status: 'delivered' },
-    ] })).rejects.toMatchObject({ code: 'REWARD_TYPE_NOT_IMPLEMENTED' });
+    ];
 
-    const progress = await db.collection('challengeProgress')
-      .doc(`weekly-whole-squad_${TEAM}_${WEEK}`).get();
-    expect(progress.exists).toBe(false); // refused BEFORE marking anything rewarded
+    beforeEach(() => {
+      MEMBERS.forEach((m) => db.__seed('users', m, { id: m, profile: { name: m }, teamId: TEAM }));
+    });
+
+    test('grants the badge to every team member in users.challengeBadges — never users.badges', async () => {
+      const result = await claim({ definitionId: 'weekly-whole-squad', orders: squadOrders() });
+
+      expect(result.rewarded).toBe(true);
+      expect(result.rewardRef).toBe('badge:team_player');
+
+      for (const m of MEMBERS) {
+        const user = await db.collection('users').doc(m).get();
+        expect(user.data().challengeBadges.team_player).toMatchObject({
+          badgeId: 'team_player', definitionId: 'weekly-whole-squad', teamId: TEAM, weekKey: WEEK,
+        });
+        expect(user.data().badges).toBeUndefined(); // badgeService's snapshot untouched
+      }
+      // No donation side effects for badge rewards
+      const counter = await db.collection('settings').doc('donations').get();
+      expect(counter.data().counter).toBe(100);
+    });
+
+    test('badge payout is exactly-once too', async () => {
+      await claim({ definitionId: 'weekly-whole-squad', orders: squadOrders() });
+      const replay = await claim({ definitionId: 'weekly-whole-squad', orders: squadOrders() });
+      expect(replay).toMatchObject({ rewarded: false, alreadyRewarded: true, rewardRef: 'badge:team_player' });
+    });
+
+    test('a missing member is skipped with a warning, not a failed payout', async () => {
+      // m3 has no users doc
+      db.__reset();
+      db.__seed('settings', 'donations', { counter: 100 });
+      ['m1', 'm2'].forEach((m) => db.__seed('users', m, { id: m, profile: { name: m }, teamId: TEAM }));
+
+      const result = await claim({ definitionId: 'weekly-whole-squad', orders: squadOrders() });
+      expect(result.rewarded).toBe(true);
+      const m1 = await db.collection('users').doc('m1').get();
+      expect(m1.data().challengeBadges.team_player).toBeDefined();
+    });
+
+    test('a badge reward without badgeId -> INVALID_REWARD', async () => {
+      const bad = {
+        id: 'bad-badge', label: 'Bad', scope: 'team', period: 'weekly',
+        metric: 'teamDeliveredOrders', target: 1, reward: { type: 'badge' },
+      };
+      await expect(claim({ definitionId: 'bad-badge', definitions: [bad] }))
+        .rejects.toMatchObject({ code: 'INVALID_REWARD' });
+    });
+
+    test('an unknown reward type still refuses loudly', async () => {
+      const weird = {
+        id: 'weird', label: 'W', scope: 'team', period: 'weekly',
+        metric: 'teamDeliveredOrders', target: 1, reward: { type: 'cash' },
+      };
+      await expect(claim({ definitionId: 'weird', definitions: [weird] }))
+        .rejects.toMatchObject({ code: 'REWARD_TYPE_NOT_IMPLEMENTED' });
+    });
   });
 });
