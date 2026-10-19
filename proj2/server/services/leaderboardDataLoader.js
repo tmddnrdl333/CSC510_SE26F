@@ -26,10 +26,16 @@ const { db } = require('../config/firebase');
 
 const TIER_RANK = { bronze: 1, silver: 2, gold: 3, diamond: 4 };
 
-// Sum of tier levels across a user's `badges` snapshot (0-4 per badge, 18
-// badges -> 0-72 range). A missing/stale snapshot, or a badge entry with no
-// tier yet, counts as 0 -- per design doc invariant 9, not a synchronous
-// recompute on this path.
+/**
+ * Sum of tier levels across a user's `badges` snapshot (0-4 per badge, 18
+ * badges -> 0-72 range). A missing/stale snapshot, or a badge entry with no
+ * tier yet, counts as 0 -- per design doc invariant 9, not a synchronous
+ * recompute on this path.
+ *
+ * @param {object|null|undefined} badgesSnapshot - `users.<id>.badges`, keyed
+ *   by badge id -> `{ currentTier, progress, nextTierThreshold, lastUpdatedAt }`.
+ * @returns {number}
+ */
 function sumBadgeTiers(badgesSnapshot) {
   if (!badgesSnapshot) return 0;
   return Object.values(badgesSnapshot).reduce((total, badge) => {
@@ -38,6 +44,13 @@ function sumBadgeTiers(badgesSnapshot) {
   }, 0);
 }
 
+/**
+ * Counts a customer's delivered orders (feeds the donatedMeals term of the
+ * score formula via `floor(count / 10)`, computed in leaderboardService.js).
+ *
+ * @param {string} userId
+ * @returns {Promise<number>}
+ */
 async function countDeliveredOrders(userId) {
   const snapshot = await db
     .collection('orders')
