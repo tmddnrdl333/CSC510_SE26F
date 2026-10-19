@@ -260,6 +260,11 @@ const CustomerHome: React.FC = () => {
           <h3>Order History</h3>
           <p>Track your past orders</p>
         </Link>
+        <Link to="/customer/team" className="action-card">
+          <div className="action-icon">🤝</div>
+          <h3>Team Challenges</h3>
+          <p>Team up with friends for weekly goals</p>
+        </Link>
       </div>
       
       <div className="manual-address-inputs form-group">
