@@ -84,7 +84,8 @@ Out of M1 scope (owned elsewhere): UC3, UC7, UC11, UC14 and `example.test.js`.
 ## 5. Known limits after M1
 
 - Read endpoints (`GET /points`, `GET /orders/customer`, …) still take ids from the query string. They leak data but don't mint numbers, so they are left for Project 3.
-- A logged-in user can still call `POST /donations/update`. The milestone asks for login only; restricting it further (or removing the endpoint, since the client never calls it) is a team decision.
+- ~~A logged-in user can still call `POST /donations/update`.~~ Resolved: the team decided in #36 to delete the endpoint; removed in #75.
+- Points are stored in `points/{customerId}` since M1. Points docs created by the old `models/Points.js` (auto-generated ids with a `userId` field, removed in #76) are orphaned and no longer read. That's harmless for the disposable emulator data we run on; a real deployment would need a one-off migration that merges them into `points/{userId}`.
 - Tokens are stateless (no logout revocation); they expire after 7 days.
-- `profile.isLocalLegend` (which sets the 15% rate) lives on the restaurant's own profile, and the profile edit routes still let a restaurant change it. It should become an admin-set field.
+- `profile.isLocalLegend` (which sets the 15% rate) lives on the restaurant's own profile, and the profile edit routes still let a restaurant change it. It should become an admin-set field. **Deferred to Project 3** (agreed in #36): a proper fix needs an admin role that doesn't exist yet.
 - `POST /orders` still takes `customerId` from the body. That can't mint points by itself (only a real delivery awards them), but it should move to `req.user.id`.

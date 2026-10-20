@@ -32,10 +32,9 @@ router.get('/stats', async (req, res) => {
 
     // Challenge-donated meals (#64): derived from the challengeProgress
     // ledger, which is written ONLY by the exactly-once payout transaction —
-    // deliberately NOT from the stored settings counter, which POST /update
-    // still lets any caller inflate until #36's deletion lands (the UC20 star
-    // finding). Deriving from the tamper-proof ledger keeps the public number
-    // honest either way.
+    // deliberately NOT from the stored settings counter (its write endpoint,
+    // POST /update, was removed in #75; the UC20 star finding). Deriving from
+    // the tamper-proof ledger keeps the public number honest either way.
     const rewardedSnap = await db.collection('challengeProgress')
       .where('status', '==', 'rewarded')
       .get();
@@ -60,40 +59,9 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// Update donation counter (called when orders reach multiples of 10).
-// Requires login: anonymous callers could inflate it without bound (UC20).
-router.post('/update', requireAuth, async (req, res) => {
-  try {
-    const { mealsToAdd } = req.body;
-    
-    if (!Number.isInteger(mealsToAdd) || mealsToAdd <= 0) {
-      return res.status(400).json({ error: 'Invalid meals amount' });
-    }
-
-    const settingsRef = db.collection('settings').doc('donations');
-    const settingsDoc = await settingsRef.get();
-    
-    let currentCounter = 0;
-    if (settingsDoc.exists) {
-      currentCounter = settingsDoc.data().counter || 0;
-    }
-    
-    const newCounter = currentCounter + mealsToAdd;
-    
-    await settingsRef.set({
-      counter: newCounter,
-      lastUpdated: new Date()
-    }, { merge: true });
-
-    res.json({
-      message: 'Donation counter updated successfully',
-      mealsDonated: newCounter
-    });
-  } catch (error) {
-    console.error('Update donation counter error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// POST /update (bump the stored counter by any amount) was removed in M1
+// (#75, decided in #36): nothing called it, and it let callers inflate the
+// donation total. Donated meals are derived in GET /stats instead.
 
 // Get donation history
 router.get('/history', async (req, res) => {

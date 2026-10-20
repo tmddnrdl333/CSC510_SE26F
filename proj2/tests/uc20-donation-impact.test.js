@@ -47,22 +47,15 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
     expect(res.body.mealsDonated).toBe(0);
   });
 
-  test('extension 2a (partial): POST /update rejects zero/negative meal amounts -> 400 (donations.js:47)', async () => {
-    const zero = await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: 0 });
-    expect(zero.status).toBe(400);
-
-    const negative = await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: -5 });
-    expect(negative.status).toBe(400);
-  });
-
   // --- HEADLINE FINDING (fixed in M1) ---
   // 1a: POST /update had no auth of any kind, so anyone could add 999,999,999 meals to the
-  // stored counter. M1 requires a logged-in user.
-  test('FIXED (M1): an unauthenticated caller can no longer inflate the stored donation counter -> 401 (donations.js:59)', async () => {
+  // stored counter. M1 first required login (#44), then removed the endpoint entirely (#75,
+  // decided in #36): nothing called it, and any logged-in user could still inflate the counter.
+  test('FIXED (M1, #75): POST /update no longer exists -- anonymous callers get 404 and nothing is written', async () => {
     seedDeliveredOrders(5);
 
     const updateRes = await request(server).post('/api/donations/update').send({ mealsToAdd: 999999999 });
-    expect(updateRes.status).toBe(401);
+    expect(updateRes.status).toBe(404);
 
     const settingsDoc = await db.collection('settings').doc('donations').get();
     expect(settingsDoc.exists).toBe(false); // nothing was written
@@ -72,29 +65,19 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
     expect(statsRes.body.mealsDonated).toBe(0); // floor(5/10)
   });
 
-  test('FIXED (M1): a forged/garbage token is rejected the same way -> 401', async () => {
-    const res = await request(server)
-      .post('/api/donations/update')
-      .set({ Authorization: 'Bearer not-a-real-token' })
-      .send({ mealsToAdd: 10 });
-    expect(res.status).toBe(401);
-  });
+  test('FIXED (M1, #75): a logged-in user cannot inflate the counter either -- 404, stats unchanged', async () => {
+    seedDeliveredOrders(12);
 
-  test('M1: a logged-in user can still update the counter (milestone scope is "requires login")', async () => {
-    const res = await request(server)
-      .post('/api/donations/update')
-      .set(bearer('customer-1', 'customer'))
-      .send({ mealsToAdd: 2 });
-    expect(res.status).toBe(200);
-    expect(res.body.mealsDonated).toBe(2);
-  });
+    for (const mealsToAdd of [2, 1000, 999999999]) {
+      const res = await request(server)
+        .post('/api/donations/update')
+        .set(bearer('customer-1', 'customer'))
+        .send({ mealsToAdd });
+      expect(res.status).toBe(404);
+    }
 
-  test('M1: non-integer meal amounts are rejected -> 400', async () => {
-    const res = await request(server)
-      .post('/api/donations/update')
-      .set(bearer('customer-1', 'customer'))
-      .send({ mealsToAdd: 1.5 });
-    expect(res.status).toBe(400);
+    const statsRes = await request(server).get('/api/donations/stats');
+    expect(statsRes.body.mealsDonated).toBe(1); // floor(12/10), untouched
   });
 
   test('M1: POST /record without a token -> 401 and nothing is logged', async () => {
@@ -102,14 +85,6 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
     expect(res.status).toBe(401);
     const history = await request(server).get('/api/donations/history');
     expect(history.body.history).toEqual([]);
-  });
-
-  // Still true after M1 for logged-in callers -- see docs/plans/m1-trust-layer.md §5.
-  test('the counter has no upper bound and keeps compounding across repeated calls (donations.js:59)', async () => {
-    await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: 1000 });
-    const second = await request(server).post('/api/donations/update').set(bearer('customer-1', 'customer')).send({ mealsToAdd: 2000 });
-    expect(second.status).toBe(200);
-    expect(second.body.mealsDonated).toBe(3000);
   });
 
   test('POST /record logs a donation entry (donations.js:96-126)', async () => {
