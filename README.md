@@ -12,7 +12,7 @@
 
 
 
-Teaser Video: 
+**Teaser Video:**
 https://github.com/user-attachments/assets/25486135-eab5-4521-983d-c02c82d7e1de
 
 
