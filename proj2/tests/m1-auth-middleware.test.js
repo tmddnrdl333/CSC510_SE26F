@@ -6,7 +6,9 @@
 const express = require('express');
 const request = require('supertest');
 // jsonwebtoken is a server dependency (server/node_modules), so resolve it from there.
-const jwt = require(require.resolve('jsonwebtoken', { paths: [require('path').join(__dirname, '..', 'server')] }));
+const jwt = require(
+  require.resolve('jsonwebtoken', { paths: [require('path').join(__dirname, '..', 'server')] })
+);
 const {
   requireAuth,
   requireRole,
@@ -29,7 +31,9 @@ describe('M1: requireAuth', () => {
   const app = appWith(requireAuth);
 
   test('a valid token sets req.user = { id, role, email }', async () => {
-    const res = await request(app).post('/probe').set(bearer('u-1', 'customer', 'u1@example.com'));
+    const res = await request(app)
+      .post('/probe')
+      .set(bearer('u-1', 'customer', 'u1@example.com'));
     expect(res.status).toBe(200);
     expect(res.body.user).toEqual({ id: 'u-1', role: 'customer', email: 'u1@example.com' });
   });
@@ -41,7 +45,9 @@ describe('M1: requireAuth', () => {
 
   test('wrong scheme (Basic, or a bare token) -> 401', async () => {
     const token = signToken({ id: 'u-1', role: 'customer' });
-    expect((await request(app).post('/probe').set('Authorization', `Basic ${token}`)).status).toBe(401);
+    expect((await request(app).post('/probe').set('Authorization', `Basic ${token}`)).status).toBe(
+      401
+    );
     expect((await request(app).post('/probe').set('Authorization', token)).status).toBe(401);
   });
 
@@ -93,15 +99,23 @@ describe('M1: rejectIfBodyIdMismatch', () => {
   );
 
   test('matching body id passes', async () => {
-    expect((await request(app).post('/probe').set(bearer('r-1', 'delivery')).send({ riderId: 'r-1' })).status).toBe(200);
+    expect(
+      (await request(app).post('/probe').set(bearer('r-1', 'delivery')).send({ riderId: 'r-1' }))
+        .status
+    ).toBe(200);
   });
 
   test('absent body id passes (token is enough)', async () => {
-    expect((await request(app).post('/probe').set(bearer('r-1', 'delivery')).send({})).status).toBe(200);
+    expect((await request(app).post('/probe').set(bearer('r-1', 'delivery')).send({})).status).toBe(
+      200
+    );
   });
 
   test("someone else's id in the body -> 403", async () => {
-    expect((await request(app).post('/probe').set(bearer('r-1', 'delivery')).send({ riderId: 'r-2' })).status).toBe(403);
+    expect(
+      (await request(app).post('/probe').set(bearer('r-1', 'delivery')).send({ riderId: 'r-2' }))
+        .status
+    ).toBe(403);
   });
 });
 

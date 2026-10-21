@@ -3,7 +3,9 @@
 // temporary auth stub exactly as server/index.js does.
 // Contract: proj2/docs/plans/m2-leaderboard.md §5, §7.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const express = require('express');
@@ -26,7 +28,12 @@ function seedCustomer(id, { totalPoints = 0 } = {}) {
   });
   // Real scheme (#55): doc id === customerId, no `userId` field -- matches
   // awardPointsForOrder (server/routes/points.js) and GET /api/points.
-  db.__seed('points', id, { totalPoints, availablePoints: totalPoints, usedPoints: 0, transactions: [] });
+  db.__seed('points', id, {
+    totalPoints,
+    availablePoints: totalPoints,
+    usedPoints: 0,
+    transactions: [],
+  });
 }
 
 describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
@@ -39,7 +46,9 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -48,9 +57,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
     seedCustomer('alice', { totalPoints: 10 });
     seedCustomer('bob', { totalPoints: 50 });
 
-    const res = await request(server)
-      .get('/api/leaderboard')
-      .set(bearer('alice', 'customer'));
+    const res = await request(server).get('/api/leaderboard').set(bearer('alice', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.scope).toBe('global');
@@ -79,9 +86,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
       seedCustomer(`customer-${i}`, { totalPoints: 21 - i }); // distinct, descending scores
     }
 
-    const res = await request(server)
-      .get('/api/leaderboard')
-      .set(bearer('customer-0', 'customer'));
+    const res = await request(server).get('/api/leaderboard').set(bearer('customer-0', 'customer'));
 
     expect(res.status).toBe(200);
     expect(res.body.entries).toHaveLength(20);
@@ -121,9 +126,7 @@ describe('UC31 (M2): GET /api/leaderboard -- global scope', () => {
       transactions: [],
     });
 
-    const res = await request(server)
-      .get('/api/leaderboard')
-      .set(bearer('dave', 'customer'));
+    const res = await request(server).get('/api/leaderboard').set(bearer('dave', 'customer'));
 
     expect(res.status).toBe(200);
     const daveEntry = res.body.entries.find((e) => e.userId === 'dave');
@@ -142,7 +145,9 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -151,7 +156,11 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
     seedCustomer('bob', { totalPoints: 50 });
     seedCustomer('carol', { totalPoints: 90 }); // not a friend of alice
 
-    const accepted = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+    const accepted = await Friendship.create({
+      userA: 'alice',
+      userB: 'bob',
+      requesterId: 'alice',
+    });
     await accepted.accept();
 
     const res = await request(server)
@@ -168,7 +177,11 @@ describe('UC31 (M2): GET /api/leaderboard?scope=friends', () => {
     seedCustomer('alice', { totalPoints: 5 }); // lowest
     seedCustomer('bob', { totalPoints: 50 });
 
-    const accepted = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+    const accepted = await Friendship.create({
+      userA: 'alice',
+      userB: 'bob',
+      requesterId: 'alice',
+    });
     await accepted.accept();
 
     const res = await request(server)

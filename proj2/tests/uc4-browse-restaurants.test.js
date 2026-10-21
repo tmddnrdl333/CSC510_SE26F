@@ -14,7 +14,9 @@
 // raw-output capture -- but every test below seeds >= 2 restaurants to stay clear of it, which is
 // itself the finding: the list endpoint is only safe above a hard-coded row count.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -29,7 +31,9 @@ describe('UC4: Browse nearby restaurants (Customer)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -76,7 +80,11 @@ describe('UC4: Browse nearby restaurants (Customer)', () => {
   }
 
   test('main success scenario: GET /restaurants returns every registered restaurant with its rating and menu (customer.js:80-154)', async () => {
-    seedRestaurant('r1', { name: 'Alpha Diner', cuisine: 'American', menu: [{ name: 'Burger', price: 9 }] });
+    seedRestaurant('r1', {
+      name: 'Alpha Diner',
+      cuisine: 'American',
+      menu: [{ name: 'Burger', price: 9 }],
+    });
     seedRestaurant('r2', { name: 'Beta Sushi', cuisine: 'Japanese', menu: [] });
 
     const res = await request(server).get('/api/customer/restaurants');
@@ -113,8 +121,12 @@ describe('UC4: Browse nearby restaurants (Customer)', () => {
     seedDeliveredRatedOrder('o2', 'rated', 3);
     // a non-delivered order with a rating must NOT count
     db.__seed('orders', 'o3', {
-      id: 'o3', restaurantId: 'rated', status: 'pending', ratings: { customer: { rating: 1 } },
-      createdAt: new Date(), updatedAt: new Date(),
+      id: 'o3',
+      restaurantId: 'rated',
+      status: 'pending',
+      ratings: { customer: { rating: 1 } },
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     const res = await request(server).get('/api/customer/restaurants');
@@ -151,8 +163,8 @@ describe('UC4: Browse nearby restaurants (Customer)', () => {
 
   test('main success scenario (distance): restaurants come back sorted nearest-first with a mileage figure (customer.js:207-296)', async () => {
     seedCustomer('cust-1', { latitude: 35.7796, longitude: -78.6382 }); // Raleigh
-    seedRestaurant('near', { name: 'Near Cafe' }, { latitude: 35.7800, longitude: -78.6400 });
-    seedRestaurant('far', { name: 'Far Grill' }, { latitude: 36.1000, longitude: -79.1000 });
+    seedRestaurant('near', { name: 'Near Cafe' }, { latitude: 35.78, longitude: -78.64 });
+    seedRestaurant('far', { name: 'Far Grill' }, { latitude: 36.1, longitude: -79.1 });
 
     const res = await request(server)
       .get('/api/customer/restaurants-by-distance')
@@ -160,7 +172,9 @@ describe('UC4: Browse nearby restaurants (Customer)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.restaurants.map((r) => r.name)).toEqual(['Near Cafe', 'Far Grill']);
-    expect(res.body.restaurants[0].distanceKm).toBeLessThanOrEqual(res.body.restaurants[1].distanceKm);
+    expect(res.body.restaurants[0].distanceKm).toBeLessThanOrEqual(
+      res.body.restaurants[1].distanceKm
+    );
     expect(typeof res.body.restaurants[0].distanceMiles).toBe('number');
   });
 

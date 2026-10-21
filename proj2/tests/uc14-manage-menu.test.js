@@ -5,7 +5,9 @@
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js) because neither
 // Docker nor the Firestore emulator toolchain is available in this environment.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -20,7 +22,9 @@ describe('UC14: Manage the menu (Restaurant)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => {
     db.__reset();
@@ -51,9 +55,7 @@ describe('UC14: Manage the menu (Restaurant)', () => {
     expect(putRes.body.menu).toEqual(menu);
 
     // "Customers see the updated menu" -- GET /menu is the read side of the same flow.
-    const getRes = await request(server)
-      .get('/api/restaurant/menu')
-      .query({ ownerId: 'owner-1' });
+    const getRes = await request(server).get('/api/restaurant/menu').query({ ownerId: 'owner-1' });
     expect(getRes.status).toBe(200);
     expect(getRes.body.menu).toEqual(menu);
   });

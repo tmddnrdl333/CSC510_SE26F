@@ -6,7 +6,7 @@ const {
   computeRepeatOrderMetrics,
   generateGitHubIssue,
   formatReport,
-  getUtcIsoWeek
+  getUtcIsoWeek,
 } = require('../../scripts/m0-eval');
 
 describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
@@ -85,16 +85,16 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
         { customerId: 'cust_l1', group: 'leaderboard', timestamp: '2026-09-02T19:00:00Z' },
         { customerId: 'cust_l1', group: 'leaderboard', timestamp: '2026-09-04T18:00:00Z' },
         { customerId: 'cust_l2', group: 'leaderboard', timestamp: '2026-09-02T12:00:00Z' },
-        { customerId: 'cust_l2', group: 'leaderboard', timestamp: '2026-09-05T19:00:00Z' }
+        { customerId: 'cust_l2', group: 'leaderboard', timestamp: '2026-09-05T19:00:00Z' },
       ];
 
-      const metrics = computeRepeatOrderMetrics(fixtureOrders, { targetLift: 0.20 });
+      const metrics = computeRepeatOrderMetrics(fixtureOrders, { targetLift: 0.2 });
 
-      expect(metrics.control.pooledRate).toBeCloseTo(0.50, 4);
-      expect(metrics.leaderboard.pooledRate).toBeCloseTo(1.00, 4);
+      expect(metrics.control.pooledRate).toBeCloseTo(0.5, 4);
+      expect(metrics.leaderboard.pooledRate).toBeCloseTo(1.0, 4);
 
       // Lift = (1.00 - 0.50) / 0.50 = +100%
-      expect(metrics.lift).toBeCloseTo(1.00, 4);
+      expect(metrics.lift).toBeCloseTo(1.0, 4);
       expect(metrics.liftPercentage).toBeCloseTo(100.0, 2);
       expect(metrics.passed).toBe(true);
       expect(metrics.decision).toBe('PERSEVERE');
@@ -115,7 +115,7 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
   describe('Falsifiability: The Eval Can Fail (Mandatory Requirement)', () => {
     test('default scenario passes hypothesis with >= 20% lift', () => {
       const orders = simulateOrders({ seed: 42, scenario: 'default', weeks: 8, customers: 100 });
-      const result = computeRepeatOrderMetrics(orders, { targetLift: 0.20 });
+      const result = computeRepeatOrderMetrics(orders, { targetLift: 0.2 });
 
       expect(result.liftPercentage).toBeGreaterThanOrEqual(20.0);
       expect(result.passed).toBe(true);
@@ -124,7 +124,7 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
 
     test('low-lift scenario fails hypothesis (< 20% lift) and produces RE-PLAN / DESCOPE', () => {
       const orders = simulateOrders({ seed: 42, scenario: 'low-lift', weeks: 8, customers: 100 });
-      const result = computeRepeatOrderMetrics(orders, { targetLift: 0.20 });
+      const result = computeRepeatOrderMetrics(orders, { targetLift: 0.2 });
 
       expect(result.liftPercentage).toBeLessThan(20.0);
       expect(result.passed).toBe(false);
@@ -133,7 +133,7 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
 
     test('zero-lift scenario fails hypothesis with near 0% lift', () => {
       const orders = simulateOrders({ seed: 42, scenario: 'zero-lift', weeks: 8, customers: 100 });
-      const result = computeRepeatOrderMetrics(orders, { targetLift: 0.20 });
+      const result = computeRepeatOrderMetrics(orders, { targetLift: 0.2 });
 
       expect(result.liftPercentage).toBeLessThan(20.0);
       expect(result.passed).toBe(false);
@@ -144,16 +144,26 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
   describe('GitHub Issue Generation & Reporting', () => {
     test('generates PERSEVERE issue content on successful evaluation', () => {
       const passedResult = {
-        targetLift: 0.20,
+        targetLift: 0.2,
         targetLiftPercentage: 20.0,
         passed: true,
         lift: 0.249,
         liftPercentage: 24.9,
         decision: 'PERSEVERE',
-        control: { pooledRate: 0.341, totalActiveCustomerWeeks: 390, totalRepeatCustomerWeeks: 133, totalOrders: 560 },
-        leaderboard: { pooledRate: 0.426, totalActiveCustomerWeeks: 385, totalRepeatCustomerWeeks: 164, totalOrders: 613 },
+        control: {
+          pooledRate: 0.341,
+          totalActiveCustomerWeeks: 390,
+          totalRepeatCustomerWeeks: 133,
+          totalOrders: 560,
+        },
+        leaderboard: {
+          pooledRate: 0.426,
+          totalActiveCustomerWeeks: 385,
+          totalRepeatCustomerWeeks: 164,
+          totalOrders: 613,
+        },
         weeks: ['2026-W36', '2026-W37'],
-        stats: { zScore: 2.43, pValue: 0.015, statisticallySignificant: true }
+        stats: { zScore: 2.43, pValue: 0.015, statisticallySignificant: true },
       };
 
       const issue = generateGitHubIssue(passedResult);
@@ -165,16 +175,26 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
 
     test('generates structured RE-PLAN / DESCOPE issue content on failure', () => {
       const failedResult = {
-        targetLift: 0.20,
+        targetLift: 0.2,
         targetLiftPercentage: 20.0,
         passed: false,
         lift: 0.0267,
         liftPercentage: 2.67,
         decision: 'RE-PLAN / DESCOPE',
-        control: { pooledRate: 0.341, totalActiveCustomerWeeks: 390, totalRepeatCustomerWeeks: 133, totalOrders: 560 },
-        leaderboard: { pooledRate: 0.350, totalActiveCustomerWeeks: 377, totalRepeatCustomerWeeks: 132, totalOrders: 547 },
+        control: {
+          pooledRate: 0.341,
+          totalActiveCustomerWeeks: 390,
+          totalRepeatCustomerWeeks: 133,
+          totalOrders: 560,
+        },
+        leaderboard: {
+          pooledRate: 0.35,
+          totalActiveCustomerWeeks: 377,
+          totalRepeatCustomerWeeks: 132,
+          totalOrders: 547,
+        },
         weeks: ['2026-W36'],
-        stats: { zScore: 0.26, pValue: 0.604, statisticallySignificant: false }
+        stats: { zScore: 0.26, pValue: 0.604, statisticallySignificant: false },
       };
 
       const issue = generateGitHubIssue(failedResult);
@@ -207,7 +227,7 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
       expect(Array.isArray(pilotOrders)).toBe(true);
       expect(pilotOrders.length).toBe(50);
 
-      const evalResult = computeRepeatOrderMetrics(pilotOrders, { targetLift: 0.20 });
+      const evalResult = computeRepeatOrderMetrics(pilotOrders, { targetLift: 0.2 });
       expect(evalResult.weeks.length).toBe(4);
       expect(evalResult.passed).toBe(true);
       expect(evalResult.decision).toBe('PERSEVERE');
@@ -232,7 +252,7 @@ describe('M0: Repeat-Order-Rate Evaluation Instrument', () => {
         { customerId: 'cust1' }, // missing timestamp
         { timestamp: '2026-09-01' }, // missing customerId
         { customerId: 'cust2', timestamp: 'invalid-date' }, // invalid date
-        { customerId: 'cust3', group: 'control', timestamp: '2026-09-01T12:00:00Z' } // valid
+        { customerId: 'cust3', group: 'control', timestamp: '2026-09-01T12:00:00Z' }, // valid
       ];
 
       const result = computeRepeatOrderMetrics(corrupted);

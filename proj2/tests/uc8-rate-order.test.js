@@ -5,7 +5,9 @@
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js) — same
 // setup and rationale as the UC10/14/15/16/20 suites.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -120,9 +122,7 @@ describe('UC8: Rate a delivered order (Customer)', () => {
     db.__seed('users', 'rest-1', { role: 'restaurant', profile: { restaurantName: 'R' } });
     const before = (await db.collection('users').doc('rest-1').get()).data();
 
-    await request(app)
-      .post('/api/orders/order-1/rate')
-      .send({ customerId: 'cust-1', rating: 4 });
+    await request(app).post('/api/orders/order-1/rate').send({ customerId: 'cust-1', rating: 4 });
 
     // Whole-document comparison (not a guessed field name): averages are recomputed
     // at read time by scanning orders (customer.js:97-122), which UC4/UC8 3a document.

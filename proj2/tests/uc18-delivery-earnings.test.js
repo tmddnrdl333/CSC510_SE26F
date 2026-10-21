@@ -9,7 +9,9 @@
 // seedBusyWork() dates from before M1 fixed User.updateDeliveryStatus (the 1a
 // "500 after paying" bug found by UC16); it is kept so these numbers stay unchanged.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -42,7 +44,12 @@ describe('UC18: Review my delivery earnings (Delivery partner)', () => {
 
   test('main success scenario: GET /orders exposes a computed per-order earning = deliveryFee + tipAmount (delivery.js:58-61)', async () => {
     const { riderA, orderId } = seedDeliveryFixture(db, {
-      order: { deliveryPartnerId: 'rider-A', status: 'out_for_delivery', deliveryFee: 3, tipAmount: 2 },
+      order: {
+        deliveryPartnerId: 'rider-A',
+        status: 'out_for_delivery',
+        deliveryFee: 3,
+        tipAmount: 2,
+      },
     });
 
     const res = await request(app).get(`/api/delivery/orders?riderId=${riderA.id}`);
@@ -59,7 +66,12 @@ describe('UC18: Review my delivery earnings (Delivery partner)', () => {
 
   test('non-numeric deliveryFee/tipAmount coerce to 0 in the displayed earning, not NaN (delivery.js:58-60)', async () => {
     seedDeliveryFixture(db, {
-      order: { deliveryPartnerId: 'rider-A', status: 'out_for_delivery', deliveryFee: 'free', tipAmount: undefined },
+      order: {
+        deliveryPartnerId: 'rider-A',
+        status: 'out_for_delivery',
+        deliveryFee: 'free',
+        tipAmount: undefined,
+      },
     });
 
     const res = await request(app).get('/api/delivery/orders?riderId=rider-A');
@@ -70,7 +82,13 @@ describe('UC18: Review my delivery earnings (Delivery partner)', () => {
 
   test('server-side bookkeeping: totalEarnings accumulates across deliveries (delivery.js:266-268, User.js:153-166)', async () => {
     const { riderA } = seedDeliveryFixture(db, {
-      order: { id: 'order-1', deliveryPartnerId: 'rider-A', status: 'out_for_delivery', deliveryFee: 3, tipAmount: 2 },
+      order: {
+        id: 'order-1',
+        deliveryPartnerId: 'rider-A',
+        status: 'out_for_delivery',
+        deliveryFee: 3,
+        tipAmount: 2,
+      },
       orderId: 'order-1',
     });
     db.__seed('orders', 'order-2', {
@@ -87,11 +105,17 @@ describe('UC18: Review my delivery earnings (Delivery partner)', () => {
     });
     seedBusyWork('rider-A');
 
-    const first = await request(app).post('/api/delivery/deliver/order-1').set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
+    const first = await request(app)
+      .post('/api/delivery/deliver/order-1')
+      .set(bearer(riderA.id, 'delivery'))
+      .send({ riderId: riderA.id });
     expect(first.status).toBe(200);
     expect(first.body.earning).toBe(5);
 
-    const second = await request(app).post('/api/delivery/deliver/order-2').set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
+    const second = await request(app)
+      .post('/api/delivery/deliver/order-2')
+      .set(bearer(riderA.id, 'delivery'))
+      .send({ riderId: riderA.id });
     expect(second.status).toBe(200);
     expect(second.body.earning).toBe(5);
 

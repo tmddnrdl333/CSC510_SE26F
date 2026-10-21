@@ -137,12 +137,16 @@ async function claimChallengeReward({
 
     if (rewardType === 'donatedMeals') {
       const counterDoc = await txn.get(counterRef);
-      const currentCounter = counterDoc.exists ? (counterDoc.data().counter || 0) : 0;
+      const currentCounter = counterDoc.exists ? counterDoc.data().counter || 0 : 0;
       rewardRef = auditId;
-      txn.set(counterRef, {
-        counter: currentCounter + rewardAmount,
-        lastUpdated: now,
-      }, { merge: true });
+      txn.set(
+        counterRef,
+        {
+          counter: currentCounter + rewardAmount,
+          lastUpdated: now,
+        },
+        { merge: true }
+      );
       txn.set(auditRef, {
         id: auditId,
         amount: rewardAmount,
@@ -178,18 +182,22 @@ async function claimChallengeReward({
     }
 
     // merge: preserve createdAt and any fields the progress API stored.
-    txn.set(progressRef, {
-      id: progressId,
-      definitionId,
-      teamId,
-      weekKey,
-      target: effectiveTarget,
-      status: 'rewarded',
-      rewardedAt: now,
-      rewardRef,
-      updatedAt: now,
-      ...(existing ? {} : { createdAt: now }),
-    }, { merge: true });
+    txn.set(
+      progressRef,
+      {
+        id: progressId,
+        definitionId,
+        teamId,
+        weekKey,
+        target: effectiveTarget,
+        status: 'rewarded',
+        rewardedAt: now,
+        rewardRef,
+        updatedAt: now,
+        ...(existing ? {} : { createdAt: now }),
+      },
+      { merge: true }
+    );
 
     return {
       rewarded: true,

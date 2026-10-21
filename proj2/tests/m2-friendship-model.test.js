@@ -2,7 +2,9 @@
 // Source under test: server/models/Friendship.js
 // Schema/contract: proj2/docs/plans/m2-leaderboard.md §4
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const { db } = require('../server/config/firebase');
 const Friendship = require('../server/models/Friendship');
@@ -21,7 +23,11 @@ describe('Friendship.computeId', () => {
 
 describe('Friendship.create / findById / findByPair', () => {
   test('creates a pending doc at the deterministic id with the given requesterId', async () => {
-    const friendship = await Friendship.create({ userA: 'bob', userB: 'alice', requesterId: 'bob' });
+    const friendship = await Friendship.create({
+      userA: 'bob',
+      userB: 'alice',
+      requesterId: 'bob',
+    });
 
     expect(friendship.id).toBe(Friendship.computeId('alice', 'bob'));
     expect(friendship.userA).toBe('alice'); // sorted, regardless of create() argument order
@@ -60,7 +66,11 @@ describe('Friendship.create / findById / findByPair', () => {
 
 describe('Friendship#accept', () => {
   test('flips status to accepted and sets acceptedAt', async () => {
-    const friendship = await Friendship.create({ userA: 'bob', userB: 'alice', requesterId: 'bob' });
+    const friendship = await Friendship.create({
+      userA: 'bob',
+      userB: 'alice',
+      requesterId: 'bob',
+    });
 
     await friendship.accept();
 
@@ -75,7 +85,11 @@ describe('Friendship#accept', () => {
 
 describe('Friendship#delete', () => {
   test('removes the doc', async () => {
-    const friendship = await Friendship.create({ userA: 'bob', userB: 'alice', requesterId: 'bob' });
+    const friendship = await Friendship.create({
+      userA: 'bob',
+      userB: 'alice',
+      requesterId: 'bob',
+    });
 
     await friendship.delete();
 
@@ -105,11 +119,19 @@ describe('Friendship.listForUser', () => {
 });
 
 describe('Friendship.getFriends', () => {
-  test('returns only accepted friends, resolved to the other party\'s id, both directions', async () => {
-    const accepted1 = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+  test("returns only accepted friends, resolved to the other party's id, both directions", async () => {
+    const accepted1 = await Friendship.create({
+      userA: 'alice',
+      userB: 'bob',
+      requesterId: 'alice',
+    });
     await accepted1.accept();
 
-    const accepted2 = await Friendship.create({ userA: '__ahmed', userB: 'alice', requesterId: '__ahmed' });
+    const accepted2 = await Friendship.create({
+      userA: '__ahmed',
+      userB: 'alice',
+      requesterId: '__ahmed',
+    });
     await accepted2.accept();
 
     // still pending -- must be excluded

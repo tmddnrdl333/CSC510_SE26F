@@ -48,7 +48,9 @@ describe('M1: computeOrderPoints', () => {
   test('Local Legend never earns fewer points than the base rate', () => {
     for (let cents = 0; cents <= 20000; cents += 37) {
       const amount = cents / 100;
-      expect(computeOrderPoints(amount, { isLocalLegend: true })).toBeGreaterThanOrEqual(computeOrderPoints(amount));
+      expect(computeOrderPoints(amount, { isLocalLegend: true })).toBeGreaterThanOrEqual(
+        computeOrderPoints(amount)
+      );
     }
   });
 });

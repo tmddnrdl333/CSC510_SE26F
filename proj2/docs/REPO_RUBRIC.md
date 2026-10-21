@@ -30,7 +30,7 @@ before submission.
 
 | Item | Evidence | Score |
 |---|---|---|
-| Tests exist, expected + failure cases | [333 tests](https://github.com/tmddnrdl333/CSC510_SE26F/tree/main/proj2/tests) (329 pass + 4 documented 1a reds, [#69–72](https://github.com/tmddnrdl333/CSC510_SE26F/issues/69)); failure/abuse cases throughout (concurrency, 401/403, replay) | 3 |
+| Tests exist, expected + failure cases | [329 tests](https://github.com/tmddnrdl333/CSC510_SE26F/tree/main/proj2/tests) (325 pass + 4 documented 1a reds, [#69–72](https://github.com/tmddnrdl333/CSC510_SE26F/issues/69)); failure/abuse cases throughout (concurrency, 401/403, replay) | 3 |
 | Serious share of the code base | 5,960 test LOC vs 4,782 server+src LOC (55%) | 3 |
 | Tests run on every commit (CI) | [GitHub Actions](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml) — jest + M0 eval on every push/PR | 3 |
 | Coverage measured, badge shows it | 75% statements (server+src, [jest.config.js](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/jest.config.js)) uploaded to [Codecov](https://codecov.io/github/tmddnrdl333/CSC510_SE26F); **(pending)** confirm badge renders our number | 2 |

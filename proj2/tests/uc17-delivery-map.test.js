@@ -25,10 +25,7 @@ const mapSrc = fs.readFileSync(
   path.join(CLIENT_SRC, 'components/delivery/DeliveryMap.tsx'),
   'utf8'
 );
-const ordersSrc = fs.readFileSync(
-  path.join(CLIENT_SRC, 'components/customer/Orders.tsx'),
-  'utf8'
-);
+const ordersSrc = fs.readFileSync(path.join(CLIENT_SRC, 'components/customer/Orders.tsx'), 'utf8');
 
 // Every file under client/src that mentions DeliveryMap at all.
 function filesMentioning(needle, dir = CLIENT_SRC) {

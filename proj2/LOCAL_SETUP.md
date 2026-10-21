@@ -19,8 +19,8 @@ Notes:
   before the customer view shows anything.
 - `client/.env` is optional (API URL defaults to `http://localhost:5001/api`).
   `REACT_APP_GOOGLE_MAPS_API_KEY` only affects signup address autocomplete.
-- Root `npm test` is broken as inherited: `tests/example.test.js` imports
-  `src/utils/businessLogic.js`, which was never committed upstream. Per the
-  assignment ("report, do not repair") we leave it as-is and report it.
+- `npm test` expects 4 documented reds (UC3, UC7, UC11, UC14; #69–72). The
+  inherited `tests/example.test.js` (it imported a never-committed
+  `src/utils/businessLogic.js`) was reported in 1a and removed in #78.
 - So your commits count for the rubric, set your git identity in this clone:
   `git config user.email <your-github-email-or-noreply-address>`

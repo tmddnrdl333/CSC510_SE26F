@@ -31,13 +31,15 @@ const order = (customerId, isoDate, overrides = {}) => ({
 describe('M3: challenge definitions + pure evaluator (#12)', () => {
   describe('getUtcIsoWeek (UTC ISO week keys)', () => {
     test('Monday and Sunday of the same ISO week share a key', () => {
-      expect(getUtcIsoWeek(new Date('2026-10-12T00:00:00.000Z')))
-        .toBe(getUtcIsoWeek(new Date('2026-10-18T23:59:59.000Z')));
+      expect(getUtcIsoWeek(new Date('2026-10-12T00:00:00.000Z'))).toBe(
+        getUtcIsoWeek(new Date('2026-10-18T23:59:59.000Z'))
+      );
     });
 
     test('Sunday vs the following Monday fall in different weeks', () => {
-      expect(getUtcIsoWeek(new Date('2026-10-11T23:59:59.000Z')))
-        .not.toBe(getUtcIsoWeek(new Date('2026-10-12T00:00:00.000Z')));
+      expect(getUtcIsoWeek(new Date('2026-10-11T23:59:59.000Z'))).not.toBe(
+        getUtcIsoWeek(new Date('2026-10-12T00:00:00.000Z'))
+      );
     });
 
     test('week key has the YYYY-Www shape', () => {
@@ -48,36 +50,44 @@ describe('M3: challenge definitions + pure evaluator (#12)', () => {
   describe('filterTeamWeekOrders', () => {
     test('keeps only delivered orders by team members inside the week', () => {
       const orders = [
-        order('m1', '2026-10-13'),                                  // counts
-        order('m2', '2026-10-14'),                                  // counts
-        order('outsider', '2026-10-14'),                            // not a member
-        order('m1', '2026-10-05'),                                  // previous week
-        order('m2', '2026-10-15', { status: 'pending' }),           // not delivered
-        order('m3', '2026-10-16', { timestamp: 'not-a-date' }),     // bad timestamp
+        order('m1', '2026-10-13'), // counts
+        order('m2', '2026-10-14'), // counts
+        order('outsider', '2026-10-14'), // not a member
+        order('m1', '2026-10-05'), // previous week
+        order('m2', '2026-10-15', { status: 'pending' }), // not delivered
+        order('m3', '2026-10-16', { timestamp: 'not-a-date' }), // bad timestamp
       ];
       const kept = filterTeamWeekOrders(orders, { memberIds: MEMBERS, weekKey: WEEK });
-      expect(kept.map((o) => o.id)).toEqual([
-        'ord-m1-2026-10-13',
-        'ord-m2-2026-10-14',
-      ]);
+      expect(kept.map((o) => o.id)).toEqual(['ord-m1-2026-10-13', 'ord-m2-2026-10-14']);
     });
 
     test('accepts createdAt as a fallback timestamp field', () => {
-      const orders = [{
-        id: 'o1', customerId: 'm1', status: 'delivered',
-        createdAt: '2026-10-13T12:00:00.000Z',
-      }];
+      const orders = [
+        {
+          id: 'o1',
+          customerId: 'm1',
+          status: 'delivered',
+          createdAt: '2026-10-13T12:00:00.000Z',
+        },
+      ];
       expect(filterTeamWeekOrders(orders, { memberIds: MEMBERS, weekKey: WEEK })).toHaveLength(1);
     });
   });
 
   describe('metric evaluation', () => {
     const fifteenOrders = Array.from({ length: 15 }, (_, i) =>
-      order(MEMBERS[i % 2], `2026-10-${String(12 + (i % 7)).padStart(2, '0')}`,
-        { id: `bulk-${i}`, totalAmount: 21 }));
+      order(MEMBERS[i % 2], `2026-10-${String(12 + (i % 7)).padStart(2, '0')}`, {
+        id: `bulk-${i}`,
+        totalAmount: 21,
+      })
+    );
 
     test('teamDeliveredOrders: 15 delivered team orders achieves the 15-order challenge', () => {
-      const results = evaluateChallenges({ orders: fifteenOrders, memberIds: MEMBERS, weekKey: WEEK });
+      const results = evaluateChallenges({
+        orders: fifteenOrders,
+        memberIds: MEMBERS,
+        weekKey: WEEK,
+      });
       const feast = results.find((r) => r.definitionId === 'weekly-team-orders-15');
       expect(feast.progress).toBe(15);
       expect(feast.achieved).toBe(true);
@@ -86,7 +96,11 @@ describe('M3: challenge definitions + pure evaluator (#12)', () => {
     });
 
     test('teamDeliveredSpend: sums totalAmount of counted orders only', () => {
-      const results = evaluateChallenges({ orders: fifteenOrders, memberIds: MEMBERS, weekKey: WEEK });
+      const results = evaluateChallenges({
+        orders: fifteenOrders,
+        memberIds: MEMBERS,
+        weekKey: WEEK,
+      });
       const spend = results.find((r) => r.definitionId === 'weekly-team-spend-300');
       expect(spend.progress).toBe(15 * 21); // 315
       expect(spend.achieved).toBe(true);
@@ -158,8 +172,9 @@ describe('M3: challenge definitions + pure evaluator (#12)', () => {
 
   describe('buildChallengeProgressId (deterministic payout id, feeds #15)', () => {
     test('is the definitionId_teamId_weekKey join', () => {
-      expect(buildChallengeProgressId('weekly-team-orders-15', 'team-abc', '2026-W42'))
-        .toBe('weekly-team-orders-15_team-abc_2026-W42');
+      expect(buildChallengeProgressId('weekly-team-orders-15', 'team-abc', '2026-W42')).toBe(
+        'weekly-team-orders-15_team-abc_2026-W42'
+      );
     });
 
     test('same inputs always collide on the same id', () => {

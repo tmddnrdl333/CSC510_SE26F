@@ -5,7 +5,9 @@
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js) because neither
 // Docker nor the Firestore emulator toolchain is available in this environment.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 // axios lives only in server/node_modules (models/User.js is its sole consumer), so a bare
 // jest.mock('axios', ...) cannot be resolved from tests/. Resolve it against the server dir and
@@ -33,7 +35,9 @@ describe('UC1: Sign up with a role (New user)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -155,9 +159,17 @@ describe('UC1: Sign up with a role (New user)', () => {
   });
 
   test('M1: an account created before M1 (plaintext password) still logs in, and is re-hashed on that login', async () => {
-    db.__seed('users', 'legacy-1', { id: 'legacy-1', email: 'old@example.com', password: 'oldpass', role: 'customer', profile: {} });
+    db.__seed('users', 'legacy-1', {
+      id: 'legacy-1',
+      email: 'old@example.com',
+      password: 'oldpass',
+      role: 'customer',
+      profile: {},
+    });
 
-    const login = await request(server).post('/api/auth/login').send({ email: 'old@example.com', password: 'oldpass' });
+    const login = await request(server)
+      .post('/api/auth/login')
+      .send({ email: 'old@example.com', password: 'oldpass' });
     expect(login.status).toBe(200);
     expect(login.body.token).toBeDefined();
 
@@ -165,7 +177,9 @@ describe('UC1: Sign up with a role (New user)', () => {
     expect(stored).toMatch(/^\$2[aby]\$/);
 
     // and the upgraded hash keeps working
-    const again = await request(server).post('/api/auth/login').send({ email: 'old@example.com', password: 'oldpass' });
+    const again = await request(server)
+      .post('/api/auth/login')
+      .send({ email: 'old@example.com', password: 'oldpass' });
     expect(again.status).toBe(200);
   });
 

@@ -3,7 +3,9 @@
 // DB_DESIGN_M2_M3.md §6: delivered-order counts feed donations, badges, the M2
 // leaderboard and M3 challenges, so `delivered` must not be settable here.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -94,7 +96,10 @@ describe('M1: PUT /api/orders/:id/status', () => {
   test('a customer (or rider) token -> 403', async () => {
     seedOrder('pending');
     for (const role of ['customer', 'delivery']) {
-      const res = await request(app).put('/api/orders/o1/status').set(bearer('someone', role)).send({ status: 'confirmed' });
+      const res = await request(app)
+        .put('/api/orders/o1/status')
+        .set(bearer('someone', role))
+        .send({ status: 'confirmed' });
       expect(res.status).toBe(403);
     }
     expect(await statusOf()).toBe('pending');
@@ -112,7 +117,10 @@ describe('M1: PUT /api/orders/:id/status', () => {
 
   test('skipping a step (pending -> ready) -> 409', async () => {
     seedOrder('pending');
-    const res = await request(app).put('/api/orders/o1/status').set(asOwner).send({ status: 'ready' });
+    const res = await request(app)
+      .put('/api/orders/o1/status')
+      .set(asOwner)
+      .send({ status: 'ready' });
     expect(res.status).toBe(409);
     expect(await statusOf()).toBe('pending');
   });
@@ -128,25 +136,65 @@ describe('M1: PUT /api/orders/:id/status', () => {
 
   test('a delivered order cannot be cancelled afterwards -> 409', async () => {
     seedOrder('delivered');
-    const res = await request(app).put('/api/orders/o1/status').set(asOwner).send({ status: 'cancelled' });
+    const res = await request(app)
+      .put('/api/orders/o1/status')
+      .set(asOwner)
+      .send({ status: 'cancelled' });
     expect(res.status).toBe(409);
     expect(await statusOf()).toBe('delivered');
   });
 
   test('nonexistent order -> 404', async () => {
-    const res = await request(app).put('/api/orders/nope/status').set(asOwner).send({ status: 'confirmed' });
+    const res = await request(app)
+      .put('/api/orders/nope/status')
+      .set(asOwner)
+      .send({ status: 'confirmed' });
     expect(res.status).toBe(404);
   });
 
   test('end to end: restaurant readies the order, the rider who claims it is the only one who can deliver it', async () => {
     seedOrder('preparing');
-    db.__seed('users', 'rider-A', { id: 'rider-A', role: 'delivery', totalEarnings: 0, deliveryStatus: 'free' });
-    db.__seed('users', 'rider-B', { id: 'rider-B', role: 'delivery', totalEarnings: 0, deliveryStatus: 'free' });
+    db.__seed('users', 'rider-A', {
+      id: 'rider-A',
+      role: 'delivery',
+      totalEarnings: 0,
+      deliveryStatus: 'free',
+    });
+    db.__seed('users', 'rider-B', {
+      id: 'rider-B',
+      role: 'delivery',
+      totalEarnings: 0,
+      deliveryStatus: 'free',
+    });
 
-    expect((await request(app).put('/api/orders/o1/status').set(asOwner).send({ status: 'ready' })).status).toBe(200);
-    expect((await request(app).post('/api/delivery/accept/o1').set(bearer('rider-A', 'delivery')).send({})).status).toBe(200);
-    expect((await request(app).post('/api/delivery/deliver/o1').set(bearer('rider-B', 'delivery')).send({})).status).toBe(403);
-    expect((await request(app).post('/api/delivery/deliver/o1').set(bearer('rider-A', 'delivery')).send({})).status).toBe(200);
+    expect(
+      (await request(app).put('/api/orders/o1/status').set(asOwner).send({ status: 'ready' }))
+        .status
+    ).toBe(200);
+    expect(
+      (
+        await request(app)
+          .post('/api/delivery/accept/o1')
+          .set(bearer('rider-A', 'delivery'))
+          .send({})
+      ).status
+    ).toBe(200);
+    expect(
+      (
+        await request(app)
+          .post('/api/delivery/deliver/o1')
+          .set(bearer('rider-B', 'delivery'))
+          .send({})
+      ).status
+    ).toBe(403);
+    expect(
+      (
+        await request(app)
+          .post('/api/delivery/deliver/o1')
+          .set(bearer('rider-A', 'delivery'))
+          .send({})
+      ).status
+    ).toBe(200);
 
     expect(await statusOf()).toBe('delivered');
     expect((await db.collection('users').doc('rider-A').get()).data().totalEarnings).toBe(4);
@@ -172,12 +220,16 @@ describe('M1 / UC6: POST /api/orders rejects negative money fields', () => {
     ['tipAmount', -1],
     ['deliveryFee', -3],
   ])('%s = %p -> 400', async (field, value) => {
-    const res = await request(app).post('/api/orders').send({ ...base, [field]: value });
+    const res = await request(app)
+      .post('/api/orders')
+      .send({ ...base, [field]: value });
     expect(res.status).toBe(400);
   });
 
   test('a normal order is still created -> 201', async () => {
-    const res = await request(app).post('/api/orders').send({ ...base, tipAmount: 2, deliveryFee: 3 });
+    const res = await request(app)
+      .post('/api/orders')
+      .send({ ...base, tipAmount: 2, deliveryFee: 3 });
     expect(res.status).toBe(201);
   });
 });

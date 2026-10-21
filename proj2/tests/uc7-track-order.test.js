@@ -8,7 +8,9 @@
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js) because neither
 // Docker nor the Firestore emulator toolchain is available in this environment.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -27,7 +29,9 @@ describe('UC7: Track my order (Customer)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -45,7 +49,7 @@ describe('UC7: Track my order (Customer)', () => {
     });
   }
 
-  test('main success scenario: GET /customer lists this customer\'s orders, each with its current status (orders.js:83-105)', async () => {
+  test("main success scenario: GET /customer lists this customer's orders, each with its current status (orders.js:83-105)", async () => {
     seedOrder('o1', 'cust-1', 'pending');
     seedOrder('o2', 'cust-1', 'out_for_delivery');
 
@@ -87,12 +91,18 @@ describe('UC7: Track my order (Customer)', () => {
   test('STAR FINDING: moving an order to "confirmed" records no confirmedAt; moving it to "preparing" is what stamps it (orders.js:202)', async () => {
     seedOrder('o1', 'cust-1', 'pending');
 
-    await request(server).put('/api/orders/o1/status').set(asRestaurant).send({ status: 'confirmed' });
+    await request(server)
+      .put('/api/orders/o1/status')
+      .set(asRestaurant)
+      .send({ status: 'confirmed' });
     let res = await request(server).get('/api/orders/customer').query({ customerId: 'cust-1' });
     expect(res.body.orders[0].status).toBe('confirmed');
     expect(res.body.orders[0].confirmedAt).toBeFalsy(); // the "confirmed" transition left no timestamp
 
-    await request(server).put('/api/orders/o1/status').set(asRestaurant).send({ status: 'preparing' });
+    await request(server)
+      .put('/api/orders/o1/status')
+      .set(asRestaurant)
+      .send({ status: 'preparing' });
     res = await request(server).get('/api/orders/customer').query({ customerId: 'cust-1' });
     expect(res.body.orders[0].status).toBe('preparing');
     expect(res.body.orders[0].confirmedAt).toBeTruthy(); // ... but "preparing" does stamp confirmedAt
@@ -123,7 +133,10 @@ describe('UC7: Track my order (Customer)', () => {
   test('FIXED (M1): an order can no longer jump straight from pending to delivered via the status route -> 400, still pending', async () => {
     seedOrder('o1', 'cust-1', 'pending');
 
-    const put = await request(server).put('/api/orders/o1/status').set(asRestaurant).send({ status: 'delivered' });
+    const put = await request(server)
+      .put('/api/orders/o1/status')
+      .set(asRestaurant)
+      .send({ status: 'delivered' });
     expect(put.status).toBe(400);
 
     const res = await request(server).get('/api/orders/customer').query({ customerId: 'cust-1' });

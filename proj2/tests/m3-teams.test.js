@@ -7,7 +7,9 @@
  * checked via the deterministic friendship doc id).
  */
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const express = require('express');
@@ -19,8 +21,13 @@ const Friendship = require('../server/models/Friendship');
 
 function seedUser(id, overrides = {}) {
   db.__seed('users', id, {
-    id, email: `${id}@example.com`, password: 'pw', role: 'customer',
-    profile: { name: id }, teamId: null, ...overrides,
+    id,
+    email: `${id}@example.com`,
+    password: 'pw',
+    role: 'customer',
+    profile: { name: id },
+    teamId: null,
+    ...overrides,
   });
 }
 
@@ -28,20 +35,36 @@ function seedAcceptedFriendship(a, b) {
   const id = Friendship.computeId(a, b);
   const [userA, userB] = [a, b].sort();
   db.__seed('friendships', id, {
-    id, userA, userB, requesterId: a, status: 'accepted',
-    members: [userA, userB], acceptedAt: new Date(),
+    id,
+    userA,
+    userB,
+    requesterId: a,
+    status: 'accepted',
+    members: [userA, userB],
+    acceptedAt: new Date(),
   });
 }
 
 function seedTeam(id, ownerId, memberIds, overrides = {}) {
   db.__seed('teams', id, {
-    id, name: `team-${id}`, ownerId, memberIds,
-    createdAt: new Date(), updatedAt: new Date(), ...overrides,
+    id,
+    name: `team-${id}`,
+    ownerId,
+    memberIds,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
   });
-  memberIds.forEach((m) => db.__seed('users', m, {
-    id: m, email: `${m}@example.com`, password: 'pw', role: 'customer',
-    profile: { name: m }, teamId: id,
-  }));
+  memberIds.forEach((m) =>
+    db.__seed('users', m, {
+      id: m,
+      email: `${m}@example.com`,
+      password: 'pw',
+      role: 'customer',
+      profile: { name: m },
+      teamId: id,
+    })
+  );
 }
 
 const as = (userId) => bearer(userId, 'customer');
@@ -57,17 +80,26 @@ describe('M3: teams create/join/leave/me (#14)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
   describe('POST /api/teams (create)', () => {
     test('main success scenario: creator becomes owner and sole member; users.teamId cache set', async () => {
       seedUser('alice');
-      const res = await request(server).post('/api/teams').set(as('alice')).send({ name: 'Wolf Pack' });
+      const res = await request(server)
+        .post('/api/teams')
+        .set(as('alice'))
+        .send({ name: 'Wolf Pack' });
 
       expect(res.status).toBe(201);
-      expect(res.body.team).toMatchObject({ name: 'Wolf Pack', ownerId: 'alice', memberIds: ['alice'] });
+      expect(res.body.team).toMatchObject({
+        name: 'Wolf Pack',
+        ownerId: 'alice',
+        memberIds: ['alice'],
+      });
 
       const team = await db.collection('teams').doc(res.body.team.id).get();
       const user = await db.collection('users').doc('alice').get();
@@ -83,7 +115,10 @@ describe('M3: teams create/join/leave/me (#14)', () => {
 
     test('extension: already in a team -> 400', async () => {
       seedTeam('t1', 'alice', ['alice']);
-      const res = await request(server).post('/api/teams').set(as('alice')).send({ name: 'Second' });
+      const res = await request(server)
+        .post('/api/teams')
+        .set(as('alice'))
+        .send({ name: 'Second' });
       expect(res.status).toBe(400);
     });
 
@@ -101,7 +136,10 @@ describe('M3: teams create/join/leave/me (#14)', () => {
       seedUser('bob');
       seedAcceptedFriendship('bob', 'alice');
 
-      const res = await request(server).post('/api/teams/join').set(as('bob')).send({ teamId: 't1' });
+      const res = await request(server)
+        .post('/api/teams/join')
+        .set(as('bob'))
+        .send({ teamId: 't1' });
 
       expect(res.status).toBe(200);
       const team = await db.collection('teams').doc('t1').get();
@@ -113,13 +151,26 @@ describe('M3: teams create/join/leave/me (#14)', () => {
     test('extension: not an accepted friend of the owner -> 403 (pending does not count)', async () => {
       seedTeam('t1', 'alice', ['alice']);
       seedUser('mallory');
-      const stranger = await request(server).post('/api/teams/join').set(as('mallory')).send({ teamId: 't1' });
+      const stranger = await request(server)
+        .post('/api/teams/join')
+        .set(as('mallory'))
+        .send({ teamId: 't1' });
       expect(stranger.status).toBe(403);
 
       const id = Friendship.computeId('mallory', 'alice');
       const [userA, userB] = ['mallory', 'alice'].sort();
-      db.__seed('friendships', id, { id, userA, userB, requesterId: 'mallory', status: 'pending', members: [userA, userB] });
-      const pending = await request(server).post('/api/teams/join').set(as('mallory')).send({ teamId: 't1' });
+      db.__seed('friendships', id, {
+        id,
+        userA,
+        userB,
+        requesterId: 'mallory',
+        status: 'pending',
+        members: [userA, userB],
+      });
+      const pending = await request(server)
+        .post('/api/teams/join')
+        .set(as('mallory'))
+        .send({ teamId: 't1' });
       expect(pending.status).toBe(403);
 
       const team = await db.collection('teams').doc('t1').get();
@@ -132,7 +183,10 @@ describe('M3: teams create/join/leave/me (#14)', () => {
       seedUser('bob');
       seedAcceptedFriendship('bob', 'alice');
 
-      const res = await request(server).post('/api/teams/join').set(as('bob')).send({ teamId: 't1' });
+      const res = await request(server)
+        .post('/api/teams/join')
+        .set(as('bob'))
+        .send({ teamId: 't1' });
       expect(res.status).toBe(400);
       expect(res.body.error).toMatch(/full/);
     });
@@ -140,7 +194,8 @@ describe('M3: teams create/join/leave/me (#14)', () => {
     test('CONCURRENCY: two friends race for the last slot — exactly one gets in', async () => {
       const members = ['alice', ...Array.from({ length: 8 }, (_, i) => `m${i}`)]; // 9/10
       seedTeam('t1', 'alice', members);
-      seedUser('bob'); seedUser('carol');
+      seedUser('bob');
+      seedUser('carol');
       seedAcceptedFriendship('bob', 'alice');
       seedAcceptedFriendship('carol', 'alice');
 
@@ -158,11 +213,17 @@ describe('M3: teams create/join/leave/me (#14)', () => {
       seedTeam('t1', 'alice', ['alice']);
       seedTeam('t2', 'dave', ['dave']);
       seedAcceptedFriendship('dave', 'alice');
-      const inTeam = await request(server).post('/api/teams/join').set(as('dave')).send({ teamId: 't1' });
+      const inTeam = await request(server)
+        .post('/api/teams/join')
+        .set(as('dave'))
+        .send({ teamId: 't1' });
       expect(inTeam.status).toBe(400);
 
       seedUser('bob');
-      const noTeam = await request(server).post('/api/teams/join').set(as('bob')).send({ teamId: 'nope' });
+      const noTeam = await request(server)
+        .post('/api/teams/join')
+        .set(as('bob'))
+        .send({ teamId: 'nope' });
       expect(noTeam.status).toBe(404);
     });
   });

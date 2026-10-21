@@ -1,6 +1,6 @@
 <!-- CI/CD and quality badges (live — each click opens the real result) -->
 [![Build Status](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml/badge.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-329%20passing%20%2B%204%20documented%20reds-brightgreen.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-325%20passing%20%2B%204%20documented%20reds-brightgreen.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/github/tmddnrdl333/CSC510_SE26F/graph/badge.svg)](https://codecov.io/github/tmddnrdl333/CSC510_SE26F)
 [![ESLint](https://img.shields.io/badge/lint-ESLint-blue.svg)](.eslintrc.json)
 [![Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](.prettierrc)
@@ -35,7 +35,7 @@ hungry-wolf/
 
 ## 🚀 Quick Start
 
-1. **Install dependencies:**
+1. **Install dependencies** (run all commands below from `proj2/`):
    ```bash
    npm run install-all
    ```
