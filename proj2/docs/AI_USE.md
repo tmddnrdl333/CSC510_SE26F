@@ -11,7 +11,7 @@ for: what the AI did, where the evidence lives, and how humans checked it.
   survey, red-teaming the proposal. Full verbatim transcripts live in
   `proj1a-report/` and `proj1b-report/` (per-model folders).
 - **Claude Code** was used during Project 2 as a pair programmer across the
-  milestones: M2 (leaderboard plan, friendships, scoring, API, page, tests),
+  milestones: M0, M1, M2 (leaderboard plan, friendships, scoring, API, page, tests),
   parts of M3 (challenge engine), CI tuning, documentation, and PR review
   preparation. Most AI-written code was committed by a team member after
   review, one small piece at a time. Some commits were made by Claude Code
