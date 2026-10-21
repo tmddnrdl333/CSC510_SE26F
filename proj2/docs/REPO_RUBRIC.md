@@ -43,8 +43,8 @@ before submission.
 | WHAT: per-function descriptions | JSDoc across M1/M2/M3 services, models, middleware | 2 |
 | HOW: mini-tutorials | [how-to/leaderboard.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/how-to/leaderboard.md), [CONTRIBUTING: adding a challenge type](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/CONTRIBUTING.md), [INSTALL](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/INSTALL.md) | 2 |
 | WHY: the story | [README](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/README.md) + [MILESTONES.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/MILESTONES.md) | 2 |
-| Teaser video at README top | **(pending)** 12–30s video — placeholder marked in README | 0 |
-| Walk-through video linked | **(pending)** 2–5 min video — placeholder marked in README | 0 |
+| Teaser video at README top | [Teaser](https://github.com/tmddnrdl333/CSC510_SE26F#readme) embedded under the badges, under 30 s, shows leaderboard, team challenges, M0 result and CI | 3 |
+| Walk-through video linked | [Feature walk-through](https://go.ncsu.edu/rh4swnv) linked at the top of the README and by QR on the poster; shows M0, M1, M2 and M3 working | 3 |
 
 ## Standard files and bling
 
