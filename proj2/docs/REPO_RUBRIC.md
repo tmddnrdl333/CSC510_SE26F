@@ -26,7 +26,7 @@ before submission.
 | Issues get closed | [Closed issues](https://github.com/tmddnrdl333/CSC510_SE26F/issues?q=is%3Aissue+is%3Aclosed); open ones are deliberate (4 documented failing tests + packaging) | 3 |
 | Discussed before closed | Decision threads: [#36](https://github.com/tmddnrdl333/CSC510_SE26F/issues/36) (3 team decisions), [#62](https://github.com/tmddnrdl333/CSC510_SE26F/issues/62), [#64](https://github.com/tmddnrdl333/CSC510_SE26F/issues/64), [#66](https://github.com/tmddnrdl333/CSC510_SE26F/issues/66); some M1 batch issues closed via PR without comments | 2 |
 | Failing-case issues | [#62](https://github.com/tmddnrdl333/CSC510_SE26F/issues/62) (live crash→fix), [#64](https://github.com/tmddnrdl333/CSC510_SE26F/issues/64) (fix rejected by our own 1a test), [#23](https://github.com/tmddnrdl333/CSC510_SE26F/issues/23), [#55](https://github.com/tmddnrdl333/CSC510_SE26F/issues/55), [#69–72](https://github.com/tmddnrdl333/CSC510_SE26F/issues/69) (remaining failing tests) | 3 |
-| Chat channel active, poster QR | Discord is the team channel; **(pending)** screenshots + QR on the poster | 2 |
+| Chat channel active, poster QR | Discord is the team channel ([invite](https://discord.gg/jQj9gKQd)), linked by QR on the poster; activity screenshots included in the submission PDF | 3 |
 
 ## Tests
 
