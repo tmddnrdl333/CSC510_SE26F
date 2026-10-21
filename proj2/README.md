@@ -35,7 +35,7 @@ hungry-wolf/
 
 ## 🚀 Quick Start
 
-1. **Install dependencies:**
+1. **Install dependencies** (run all commands below from `proj2/`):
    ```bash
    npm run install-all
    ```
