@@ -3,8 +3,7 @@
 **Repo:** https://github.com/tmddnrdl333/CSC510_SE26F
 
 Scored per proj2.md: 0 none / 1 a little / 2 somewhat / 3 a lot, each with
-evidence. Rows marked **(pending)** list exactly what raises the score
-before submission.
+evidence. 
 
 ## Teamwork, visible in GitHub
 
