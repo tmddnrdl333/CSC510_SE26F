@@ -9,7 +9,7 @@ evidence.
 
 | Item | Evidence | Score |
 |---|---|---|
-| Many commits | [288 commits](https://github.com/tmddnrdl333/CSC510_SE26F/commits/main) — 175 by this team on top of the inherited 113 | 2 |
+| Many commits | [288 commits](https://github.com/tmddnrdl333/CSC510_SE26F/commits/main) — 195 by this team on top of the inherited 93 | 2 |
 | Commits from different people | [Contributors](https://github.com/tmddnrdl333/CSC510_SE26F/graphs/contributors): all four members active | 3 |
 | Workload spread over the team | [Insights](https://github.com/tmddnrdl333/CSC510_SE26F/graphs/contributors): 65 / 54 / 23 / 15 (plus 18 authored via Claude Code, disclosed in AI_USE.md) — uneven but everyone substantial | 2 |
 | Members work across many parts | Each member shipped server+client+tests: [M1 #51](https://github.com/tmddnrdl333/CSC510_SE26F/pull/51), [M2 #56](https://github.com/tmddnrdl333/CSC510_SE26F/pull/56), [M3 #61](https://github.com/tmddnrdl333/CSC510_SE26F/pull/61), [M0 #11](https://github.com/tmddnrdl333/CSC510_SE26F/pull/11) | 3 |
