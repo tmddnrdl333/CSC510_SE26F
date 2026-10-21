@@ -64,4 +64,4 @@ evidence.
 
 ## Sum
 
-**88 / 96** today. Remaining: demo rehearsal (+1).
+**88 / 96** today. 
