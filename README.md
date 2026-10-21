@@ -79,7 +79,7 @@ Live progress, one issue per step: [GitHub milestones](https://github.com/tmddnr
 Hypothesis: the weekly repeat-order rate rises by at least 20% with the leaderboard, compared with a no-leaderboard baseline.
 - [x] `scripts/m0-eval.js`: computes the weekly repeat-order rate per group and prints the lift and PASS/FAIL (`npm run eval:m0`)
 - [x] Seeded synthetic order generator, so reruns give the same number. Seed 42: **+24.9% lift → PASS**. The lift is simulated, not hard-coded, so the eval can fail.
-- [x] Runs in CI on every push, and on a pilot dataset (`npm run eval:m0:pilot`)
+- [x] Runs in CI on every push, and on an illustrative sample dataset. (`npm run eval:m0:pilot`)
 - [x] Issue template for recording a persevere / re-plan / descope decision if it fails
 
 ### M1: Trust layer ✅
