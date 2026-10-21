@@ -10,7 +10,11 @@
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](proj2/docs/CONTRIBUTING.md)
 [![DOI](https://zenodo.org/badge/1349823474.svg)](https://zenodo.org/badge/latestdoi/1349823474)
 
-<!-- TODO(teaser): 12-30s teaser video goes RIGHT HERE, above the title. -->
+
+
+Teaser Video: 
+https://github.com/user-attachments/assets/25486135-eab5-4521-983d-c02c82d7e1de
+
 
 # Hungry Wolf 🐺
 **Not Just Food, A Quest Worth Savoring**
