@@ -4,6 +4,9 @@
 **Evaluator**: Mahek (Ummmahek)
 **Date**: 2026-10-20
 
+> [!NOTE]
+> The **primary eval result** uses the seeded synthetic simulation (Mulberry32, seed 42). The file `data/pilot-orders-sample.json` is an **illustrative sample** created to validate the script's data-ingestion format — it is **not** real user data and its +460% lift figure carries no evidential weight.
+
 ---
 
 ## Hypothesis

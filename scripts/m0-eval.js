@@ -24,8 +24,8 @@
  *      demonstrably FAILS.
  *   6. DECISION FRAMEWORK: If the evaluation fails, outputs a structured decision
  *      (PERSEVERE / RE-PLAN / DESCOPE) and formats a GitHub Issue draft ready to file.
- *   7. PILOT DATA SUPPORT (BONUS): Supports ingesting real pilot order logs via
- *      `--data=<path>` or `--pilot=<path>` to validate against empirical trial data.
+ *   7. SAMPLE DATA SUPPORT (BONUS): Supports ingesting external order logs via
+ *      `--data=<path>` or `--pilot=<path>` to validate the instrument format against illustrative sample data.
  *
  * SIMULATION METHODOLOGY & BEHAVIORAL MODEL:
  *   --------------------------------------------------------------------------
@@ -533,7 +533,7 @@ Usage:
   node scripts/m0-eval.js [options]
 
 Options:
-  --data=<path>         Path to real pilot or external orders JSON dataset (Bonus)
+  --data=<path>         Path to an illustrative sample orders JSON file (format validation only — not real user data)
   --scenario=<name>     Simulation scenario: 'default', 'low-lift', 'zero-lift' (default: default)
   --seed=<n>            Integer PRNG seed for reproducible simulation (default: 42)
   --target-lift=<f>     Required relative lift target (default: 0.20 for +20%)
@@ -555,7 +555,7 @@ Examples:
   let orders = [];
   let dataSourceDescription = '';
 
-  // 1. Ingest orders: either from real pilot file or seeded generator
+  // 1. Ingest orders: either from illustrative sample file or seeded generator
   if (options.dataPath) {
     const resolvedPath = path.resolve(process.cwd(), options.dataPath);
     if (!fs.existsSync(resolvedPath)) {
@@ -574,7 +574,7 @@ Examples:
       console.error('Error: Ingested file must be an array of orders or an object with an "orders" array.');
       process.exit(1);
     }
-    dataSourceDescription = `Real pilot dataset loaded from ${path.basename(resolvedPath)} (${orders.length} orders)`;
+    dataSourceDescription = `Illustrative sample dataset loaded from ${path.basename(resolvedPath)} (${orders.length} orders â€” hand-crafted for format validation, not real user data)`;
   } else {
     // Seeded synthetic order generation
     orders = simulateOrders({
