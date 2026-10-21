@@ -63,5 +63,4 @@ before submission.
 
 ## Sum
 
-**80 / 99** today. Clear path to ~86: teaser (+2), walk-through (+2),
-poster QR + chat screenshots (+1), demo rehearsal (+1).
+**86 / 96** today. Remaining: poster QR + chat screenshots (+1), demo rehearsal (+1).
