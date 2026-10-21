@@ -65,4 +65,4 @@ before submission.
 
 ## Sum
 
-**86 / 96** today. Remaining: poster QR + chat screenshots (+1), demo rehearsal (+1).
+**87 / 96** today. Remaining: demo rehearsal (+1).
