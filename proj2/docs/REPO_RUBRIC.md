@@ -15,7 +15,7 @@ evidence.
 | Members work across many parts | Each member shipped server+client+tests: [M1 #51](https://github.com/tmddnrdl333/CSC510_SE26F/pull/51), [M2 #56](https://github.com/tmddnrdl333/CSC510_SE26F/pull/56), [M3 #61](https://github.com/tmddnrdl333/CSC510_SE26F/pull/61), [M0 #11](https://github.com/tmddnrdl333/CSC510_SE26F/pull/11) | 3 |
 | Short release cycles | [25+ merged PRs](https://github.com/tmddnrdl333/CSC510_SE26F/pulls?q=is%3Apr+is%3Amerged), typically merged same day | 3 |
 | Same tools, configs updated by many | [ci.yml history](https://github.com/tmddnrdl333/CSC510_SE26F/commits/main/.github/workflows/ci.yml) (Mahek, Seung Wook), jest/eslint/prettier configs in repo | 2 |
-| Whole team can run the system | [INSTALL](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/INSTALL.md) + [LOCAL_SETUP](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/LOCAL_SETUP.md); **(pending)** confirm all four at demo rehearsal | 2 |
+| Whole team can run the system | [INSTALL](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/INSTALL.md) + [LOCAL_SETUP](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/LOCAL_SETUP.md); | 3 |
 
 ## Issues and discussion
 
@@ -64,4 +64,4 @@ evidence.
 
 ## Sum
 
-**87 / 96** today. Remaining: demo rehearsal (+1).
+**88 / 96** today. Remaining: demo rehearsal (+1).
