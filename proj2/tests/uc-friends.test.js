@@ -2,7 +2,9 @@
 // Source under test: server/routes/friends.js, mounted behind requireAuth exactly as server/index.js does.
 // Contract: proj2/docs/plans/m2-leaderboard.md §4, §5, §7.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const express = require('express');
@@ -42,7 +44,9 @@ describe('UC28 (M2): Friendships', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -79,7 +83,11 @@ describe('UC28 (M2): Friendships', () => {
     test('extension: already friends -> 400', async () => {
       seedUser('alice');
       seedUser('bob');
-      const existing = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const existing = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
       await existing.accept();
 
       const res = await request(server)
@@ -120,9 +128,7 @@ describe('UC28 (M2): Friendships', () => {
     });
 
     test('extension: no auth token -> 401', async () => {
-      const res = await request(server)
-        .post('/api/friends/request')
-        .send({ toUserId: 'bob' });
+      const res = await request(server).post('/api/friends/request').send({ toUserId: 'bob' });
 
       expect(res.status).toBe(401);
     });
@@ -132,7 +138,11 @@ describe('UC28 (M2): Friendships', () => {
     test('main success scenario: the non-requester accepts a pending request', async () => {
       seedUser('alice');
       seedUser('bob');
-      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const pending = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
 
       const res = await request(server)
         .post('/api/friends/accept')
@@ -150,7 +160,11 @@ describe('UC28 (M2): Friendships', () => {
     test('extension: the requester cannot accept their own request -> 403', async () => {
       seedUser('alice');
       seedUser('bob');
-      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const pending = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
 
       const res = await request(server)
         .post('/api/friends/accept')
@@ -174,7 +188,11 @@ describe('UC28 (M2): Friendships', () => {
     test('extension: already accepted -> 400', async () => {
       seedUser('alice');
       seedUser('bob');
-      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const pending = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
       await pending.accept();
 
       const res = await request(server)
@@ -189,7 +207,11 @@ describe('UC28 (M2): Friendships', () => {
       seedUser('alice');
       seedUser('bob');
       seedUser('carol');
-      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const pending = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
 
       const res = await request(server)
         .post('/api/friends/accept')
@@ -208,7 +230,11 @@ describe('UC28 (M2): Friendships', () => {
     test('main success scenario: the recipient rejects a pending request, deleting it', async () => {
       seedUser('alice');
       seedUser('bob');
-      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const pending = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
 
       const res = await request(server)
         .post('/api/friends/reject')
@@ -224,7 +250,11 @@ describe('UC28 (M2): Friendships', () => {
     test('extension: the requester cannot reject their own sent request -> 403', async () => {
       seedUser('alice');
       seedUser('bob');
-      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const pending = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
 
       const res = await request(server)
         .post('/api/friends/reject')
@@ -242,7 +272,11 @@ describe('UC28 (M2): Friendships', () => {
       seedUser('alice');
       seedUser('bob');
       seedUser('carol');
-      const pending = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const pending = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
 
       const res = await request(server)
         .post('/api/friends/reject')
@@ -259,7 +293,11 @@ describe('UC28 (M2): Friendships', () => {
     test('extension: rejecting an already-accepted friendship -> 400, doc still exists', async () => {
       seedUser('alice');
       seedUser('bob');
-      const accepted = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const accepted = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
       await accepted.accept();
 
       const res = await request(server)
@@ -283,12 +321,14 @@ describe('UC28 (M2): Friendships', () => {
 
       const f1 = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
       await f1.accept();
-      const f2 = await Friendship.create({ userA: '__ahmed', userB: 'alice', requesterId: '__ahmed' });
+      const f2 = await Friendship.create({
+        userA: '__ahmed',
+        userB: 'alice',
+        requesterId: '__ahmed',
+      });
       await f2.accept();
 
-      const res = await request(server)
-        .get('/api/friends/list')
-        .set(bearer('alice', 'customer'));
+      const res = await request(server).get('/api/friends/list').set(bearer('alice', 'customer'));
 
       expect(res.status).toBe(200);
       expect(res.body.friends).toHaveLength(2);
@@ -305,13 +345,15 @@ describe('UC28 (M2): Friendships', () => {
       seedUser('bob');
       seedUser('zoe');
 
-      const accepted = await Friendship.create({ userA: 'alice', userB: 'bob', requesterId: 'alice' });
+      const accepted = await Friendship.create({
+        userA: 'alice',
+        userB: 'bob',
+        requesterId: 'alice',
+      });
       await accepted.accept();
       await Friendship.create({ userA: 'alice', userB: 'zoe', requesterId: 'zoe' }); // left pending
 
-      const res = await request(server)
-        .get('/api/friends/list')
-        .set(bearer('alice', 'customer'));
+      const res = await request(server).get('/api/friends/list').set(bearer('alice', 'customer'));
 
       expect(res.status).toBe(200);
       expect(res.body.friends).toHaveLength(1);
@@ -321,9 +363,7 @@ describe('UC28 (M2): Friendships', () => {
     test('extension: a user with no friendships gets an empty list, not an error', async () => {
       seedUser('alice');
 
-      const res = await request(server)
-        .get('/api/friends/list')
-        .set(bearer('alice', 'customer'));
+      const res = await request(server).get('/api/friends/list').set(bearer('alice', 'customer'));
 
       expect(res.status).toBe(200);
       expect(res.body.friends).toEqual([]);

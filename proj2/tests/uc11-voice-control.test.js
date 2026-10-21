@@ -78,9 +78,7 @@ describe('UC11: Control the app by voice (Customer)', () => {
   test('extension 2a: no GEMINI_API_KEY -> 500, feature dead (voice.js:39-42)', async () => {
     delete process.env.GEMINI_API_KEY;
 
-    const res = await request(app)
-      .post('/api/voice/classify')
-      .send({ userText: 'open my cart' });
+    const res = await request(app).post('/api/voice/classify').send({ userText: 'open my cart' });
 
     expect(res.status).toBe(500);
     expect(res.body.error).toMatch(/key is missing/i);
@@ -90,9 +88,7 @@ describe('UC11: Control the app by voice (Customer)', () => {
   test('extension 2b: unparseable model reply -> 422 with the raw text echoed (voice.js:71-75)', async () => {
     axios.post.mockResolvedValue(geminiReply('I think the user wants the cart page'));
 
-    const res = await request(app)
-      .post('/api/voice/classify')
-      .send({ userText: 'cart please' });
+    const res = await request(app).post('/api/voice/classify').send({ userText: 'cart please' });
 
     expect(res.status).toBe(422);
     expect(res.body.raw).toMatch(/cart page/);
@@ -101,15 +97,13 @@ describe('UC11: Control the app by voice (Customer)', () => {
   test('extension 2c: upstream Gemini HTTP error status is passed through (voice.js:83-87)', async () => {
     axios.post.mockRejectedValue({ response: { status: 429, data: { error: 'quota' } } });
 
-    const res = await request(app)
-      .post('/api/voice/classify')
-      .send({ userText: 'open my cart' });
+    const res = await request(app).post('/api/voice/classify').send({ userText: 'open my cart' });
 
     expect(res.status).toBe(429);
     expect(res.body.error).toMatch(/classification failed/i);
   });
 
-  test('[DOC EXPECTATION] a food-ordering app\'s voice feature should be able to add an item or place an order (EXPECTED TO FAIL — the action list is 5 navigation commands only, voice.js:6-12)', async () => {
+  test("[DOC EXPECTATION] a food-ordering app's voice feature should be able to add an item or place an order (EXPECTED TO FAIL — the action list is 5 navigation commands only, voice.js:6-12)", async () => {
     // Even a perfectly-behaving model cannot produce an ordering action, because no
     // such action id exists. The doc's original name "Order by voice" was unimplementable.
     axios.post.mockResolvedValue(geminiReply('addToCart'));

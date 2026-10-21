@@ -8,7 +8,9 @@
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js) because neither
 // Docker nor the Firestore emulator toolchain is available in this environment.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 // axios lives only in server/node_modules (models/User.js is its sole consumer), so a bare
 // jest.mock('axios', ...) cannot be resolved from tests/. Resolve it against the server dir and
@@ -40,7 +42,9 @@ describe('UC3: Manage profile (Any logged-in user)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -149,8 +153,8 @@ describe('UC3: Manage profile (Any logged-in user)', () => {
 
     expect(put.status).toBe(200);
     expect(put.body.customer.profile.phone).toBe('2223334444');
-    expect(put.body.customer.profile.name).toBeUndefined();    // 'Ada' is gone
-    expect(put.body.customer.profile.address).toBeUndefined();  // so is the address
+    expect(put.body.customer.profile.name).toBeUndefined(); // 'Ada' is gone
+    expect(put.body.customer.profile.address).toBeUndefined(); // so is the address
   });
 
   // --- FINDING: "four endpoints, different contracts", made concrete (x2) ---

@@ -218,7 +218,7 @@ async function buildCustomerStats(customerId) {
   const restaurantCounts = groupOrdersByRestaurant(orders);
   const sameRestaurantMaxOrders = Object.values(restaurantCounts).reduce(
     (max, count) => Math.max(max, count),
-    0,
+    0
   );
 
   const maxStreakDays = computeMaxStreak(orders);

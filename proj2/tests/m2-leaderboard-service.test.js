@@ -16,8 +16,7 @@ describe('computeScore', () => {
   test('normal case: combines all three terms with their weights', () => {
     const user = { totalPoints: 50, badgeTiers: 10, deliveredOrderCount: 23 };
     // donatedMeals = floor(23 / 10) = 2
-    const expected =
-      POINTS_WEIGHT * 50 + BADGE_TIER_WEIGHT * 10 + DONATED_MEAL_WEIGHT * 2;
+    const expected = POINTS_WEIGHT * 50 + BADGE_TIER_WEIGHT * 10 + DONATED_MEAL_WEIGHT * 2;
 
     expect(computeScore(user)).toBe(expected);
     expect(computeScore(user)).toBe(80); // pinned, given the current weights (1, 2, 5)

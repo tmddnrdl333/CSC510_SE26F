@@ -202,13 +202,19 @@ describe('UC19 — Earn and view badges', () => {
     }));
 
     jest.doMock('../src/badges/badgeDefinitions', () => ({
-      badgeDefinitions: [{ id: 'total_orders', metric: 'totalOrdersCount', tiers: [{ tier: 'bronze', threshold: 5 }] }],
+      badgeDefinitions: [
+        {
+          id: 'total_orders',
+          metric: 'totalOrdersCount',
+          tiers: [{ tier: 'bronze', threshold: 5 }],
+        },
+      ],
     }));
 
     jest.doMock('../src/badges/evaluateBadges', () => ({
-      evaluateBadges: jest.fn().mockReturnValue([
-        { id: 'total_orders', currentTier: 'bronze', value: 5 },
-      ]),
+      evaluateBadges: jest
+        .fn()
+        .mockReturnValue([{ id: 'total_orders', currentTier: 'bronze', value: 5 }]),
     }));
 
     const { getCustomerBadges } = require('../server/services/badgeService');

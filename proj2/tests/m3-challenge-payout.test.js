@@ -7,7 +7,9 @@
  * Same bug class as the 1a points double-spend — concurrency is the point.
  */
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const { db } = require('../server/config/firebase');
 const { claimChallengeReward } = require('../server/services/challengeService');
@@ -67,13 +69,16 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
   });
 
   test('an unachieved challenge pays nothing and writes nothing', async () => {
-    await expect(claim({ orders: achievingOrders().slice(0, 3) }))
-      .rejects.toMatchObject({ code: 'NOT_ACHIEVED' });
+    await expect(claim({ orders: achievingOrders().slice(0, 3) })).rejects.toMatchObject({
+      code: 'NOT_ACHIEVED',
+    });
 
     const counter = await db.collection('settings').doc('donations').get();
     expect(counter.data().counter).toBe(100);
-    const progress = await db.collection('challengeProgress')
-      .doc(`weekly-team-orders-15_${TEAM}_${WEEK}`).get();
+    const progress = await db
+      .collection('challengeProgress')
+      .doc(`weekly-team-orders-15_${TEAM}_${WEEK}`)
+      .get();
     expect(progress.exists).toBe(false);
   });
 
@@ -126,8 +131,9 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
   });
 
   test('unknown definition -> UNKNOWN_CHALLENGE', async () => {
-    await expect(claim({ definitionId: 'nope' }))
-      .rejects.toMatchObject({ code: 'UNKNOWN_CHALLENGE' });
+    await expect(claim({ definitionId: 'nope' })).rejects.toMatchObject({
+      code: 'UNKNOWN_CHALLENGE',
+    });
   });
 
   test('pre-existing active doc: createdAt/extra fields preserved, stored (lower) target honored', async () => {
@@ -185,8 +191,9 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
       target: 1,
       reward: { type: 'donatedMeals' }, // amount missing -> would make counter NaN
     };
-    await expect(claim({ definitionId: 'bad-amount', definitions: [bad] }))
-      .rejects.toMatchObject({ code: 'INVALID_REWARD' });
+    await expect(claim({ definitionId: 'bad-amount', definitions: [bad] })).rejects.toMatchObject({
+      code: 'INVALID_REWARD',
+    });
     const counter = await db.collection('settings').doc('donations').get();
     expect(counter.data().counter).toBe(100);
   });
@@ -194,7 +201,13 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
   describe('badge rewards (#17)', () => {
     const squadOrders = () => [
       ...achievingOrders(),
-      { id: 'm3-order', customerId: 'm3', timestamp: '2026-10-15T18:00:00.000Z', totalAmount: 10, status: 'delivered' },
+      {
+        id: 'm3-order',
+        customerId: 'm3',
+        timestamp: '2026-10-15T18:00:00.000Z',
+        totalAmount: 10,
+        status: 'delivered',
+      },
     ];
 
     beforeEach(() => {
@@ -210,7 +223,10 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
       for (const m of MEMBERS) {
         const user = await db.collection('users').doc(m).get();
         expect(user.data().challengeBadges.team_player).toMatchObject({
-          badgeId: 'team_player', definitionId: 'weekly-whole-squad', teamId: TEAM, weekKey: WEEK,
+          badgeId: 'team_player',
+          definitionId: 'weekly-whole-squad',
+          teamId: TEAM,
+          weekKey: WEEK,
         });
         expect(user.data().badges).toBeUndefined(); // badgeService's snapshot untouched
       }
@@ -222,14 +238,20 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
     test('badge payout is exactly-once too', async () => {
       await claim({ definitionId: 'weekly-whole-squad', orders: squadOrders() });
       const replay = await claim({ definitionId: 'weekly-whole-squad', orders: squadOrders() });
-      expect(replay).toMatchObject({ rewarded: false, alreadyRewarded: true, rewardRef: 'badge:team_player' });
+      expect(replay).toMatchObject({
+        rewarded: false,
+        alreadyRewarded: true,
+        rewardRef: 'badge:team_player',
+      });
     });
 
     test('a missing member is skipped with a warning, not a failed payout', async () => {
       // m3 has no users doc
       db.__reset();
       db.__seed('settings', 'donations', { counter: 100 });
-      ['m1', 'm2'].forEach((m) => db.__seed('users', m, { id: m, profile: { name: m }, teamId: TEAM }));
+      ['m1', 'm2'].forEach((m) =>
+        db.__seed('users', m, { id: m, profile: { name: m }, teamId: TEAM })
+      );
 
       const result = await claim({ definitionId: 'weekly-whole-squad', orders: squadOrders() });
       expect(result.rewarded).toBe(true);
@@ -239,20 +261,32 @@ describe('M3: exactly-once challenge reward payout (#15)', () => {
 
     test('a badge reward without badgeId -> INVALID_REWARD', async () => {
       const bad = {
-        id: 'bad-badge', label: 'Bad', scope: 'team', period: 'weekly',
-        metric: 'teamDeliveredOrders', target: 1, reward: { type: 'badge' },
+        id: 'bad-badge',
+        label: 'Bad',
+        scope: 'team',
+        period: 'weekly',
+        metric: 'teamDeliveredOrders',
+        target: 1,
+        reward: { type: 'badge' },
       };
-      await expect(claim({ definitionId: 'bad-badge', definitions: [bad] }))
-        .rejects.toMatchObject({ code: 'INVALID_REWARD' });
+      await expect(claim({ definitionId: 'bad-badge', definitions: [bad] })).rejects.toMatchObject({
+        code: 'INVALID_REWARD',
+      });
     });
 
     test('an unknown reward type still refuses loudly', async () => {
       const weird = {
-        id: 'weird', label: 'W', scope: 'team', period: 'weekly',
-        metric: 'teamDeliveredOrders', target: 1, reward: { type: 'cash' },
+        id: 'weird',
+        label: 'W',
+        scope: 'team',
+        period: 'weekly',
+        metric: 'teamDeliveredOrders',
+        target: 1,
+        reward: { type: 'cash' },
       };
-      await expect(claim({ definitionId: 'weird', definitions: [weird] }))
-        .rejects.toMatchObject({ code: 'REWARD_TYPE_NOT_IMPLEMENTED' });
+      await expect(claim({ definitionId: 'weird', definitions: [weird] })).rejects.toMatchObject({
+        code: 'REWARD_TYPE_NOT_IMPLEMENTED',
+      });
     });
   });
 });

@@ -7,7 +7,9 @@
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js) because neither
 // Docker nor the Firestore emulator toolchain is available in this environment.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -24,7 +26,9 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -112,8 +116,14 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
     const { riderA, riderB, orderId } = seedDeliveryFixture(db);
 
     const [resA, resB] = await Promise.all([
-      request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id }),
-      request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderB.id, 'delivery')).send({ riderId: riderB.id }),
+      request(server)
+        .post(`/api/delivery/accept/${orderId}`)
+        .set(bearer(riderA.id, 'delivery'))
+        .send({ riderId: riderA.id }),
+      request(server)
+        .post(`/api/delivery/accept/${orderId}`)
+        .set(bearer(riderB.id, 'delivery'))
+        .send({ riderId: riderB.id }),
     ]);
 
     expect([resA.status, resB.status].sort()).toEqual([200, 409]);
@@ -125,7 +135,9 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
   // --- M1 auth ---
   test('M1: accepting without a token -> 401, order stays unassigned', async () => {
     const { riderA, orderId } = seedDeliveryFixture(db);
-    const res = await request(server).post(`/api/delivery/accept/${orderId}`).send({ riderId: riderA.id });
+    const res = await request(server)
+      .post(`/api/delivery/accept/${orderId}`)
+      .send({ riderId: riderA.id });
     expect(res.status).toBe(401);
     const orderDoc = await db.collection('orders').doc(orderId).get();
     expect(orderDoc.data().deliveryPartnerId).toBeNull();
@@ -133,7 +145,10 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
   test('M1: a customer token cannot accept delivery jobs -> 403', async () => {
     const { orderId } = seedDeliveryFixture(db);
-    const res = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer('customer-1', 'customer')).send({});
+    const res = await request(server)
+      .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer('customer-1', 'customer'))
+      .send({});
     expect(res.status).toBe(403);
   });
 
@@ -150,7 +165,10 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
   test('M1: the token alone is enough -- no riderId in the body still claims the job for the logged-in rider', async () => {
     const { riderA, orderId } = seedDeliveryFixture(db);
-    const res = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({});
+    const res = await request(server)
+      .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
+      .send({});
     expect(res.status).toBe(200);
     const orderDoc = await db.collection('orders').doc(orderId).get();
     expect(orderDoc.data().deliveryPartnerId).toBe(riderA.id);
@@ -158,14 +176,25 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
   test('accepting an order that does not exist -> 404', async () => {
     const { riderA } = seedDeliveryFixture(db);
-    const res = await request(server).post('/api/delivery/accept/no-such-order').set(bearer(riderA.id, 'delivery')).send({});
+    const res = await request(server)
+      .post('/api/delivery/accept/no-such-order')
+      .set(bearer(riderA.id, 'delivery'))
+      .send({});
     expect(res.status).toBe(404);
   });
 
   test('main scenario step 1: GET /available lists only ready, unassigned orders (delivery.js:299-331)', async () => {
     const { orderId } = seedDeliveryFixture(db); // order-1: ready, unassigned by default
-    db.__seed('orders', 'order-already-assigned', { id: 'order-already-assigned', status: 'ready', deliveryPartnerId: 'rider-A' });
-    db.__seed('orders', 'order-preparing', { id: 'order-preparing', status: 'preparing', deliveryPartnerId: null });
+    db.__seed('orders', 'order-already-assigned', {
+      id: 'order-already-assigned',
+      status: 'ready',
+      deliveryPartnerId: 'rider-A',
+    });
+    db.__seed('orders', 'order-preparing', {
+      id: 'order-preparing',
+      status: 'preparing',
+      deliveryPartnerId: null,
+    });
 
     const res = await request(server).get('/api/delivery/available');
     expect(res.status).toBe(200);
@@ -177,10 +206,16 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
 
   test('extension 2e: POST /reject releases a claimed order back to ready/unassigned (delivery.js:164-191)', async () => {
     const { riderA, orderId } = seedDeliveryFixture(db);
-    const claimRes = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
+    const claimRes = await request(server)
+      .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
+      .send({ riderId: riderA.id });
     expect(claimRes.status).toBe(200);
 
-    const res = await request(server).post(`/api/delivery/reject/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
+    const res = await request(server)
+      .post(`/api/delivery/reject/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
+      .send({ riderId: riderA.id });
     expect(res.status).toBe(200);
 
     const orderDoc = await db.collection('orders').doc(orderId).get();
@@ -193,10 +228,16 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
   // someone else's claimed order.
   test("FIXED (M1): an uninvolved rider can no longer reject someone else's claimed order -> 403, claim intact", async () => {
     const { riderA, riderB, orderId } = seedDeliveryFixture(db);
-    const claimRes = await request(server).post(`/api/delivery/accept/${orderId}`).set(bearer(riderA.id, 'delivery')).send({ riderId: riderA.id });
+    const claimRes = await request(server)
+      .post(`/api/delivery/accept/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
+      .send({ riderId: riderA.id });
     expect(claimRes.status).toBe(200);
 
-    const res = await request(server).post(`/api/delivery/reject/${orderId}`).set(bearer(riderB.id, 'delivery')).send({ riderId: riderB.id });
+    const res = await request(server)
+      .post(`/api/delivery/reject/${orderId}`)
+      .set(bearer(riderB.id, 'delivery'))
+      .send({ riderId: riderB.id });
     expect(res.status).toBe(403);
 
     const orderDoc = await db.collection('orders').doc(orderId).get();
@@ -205,8 +246,13 @@ describe('UC15: Claim a delivery job (Delivery partner)', () => {
   });
 
   test('M1: a delivered order cannot be "rejected" back to ready by its rider -> 409', async () => {
-    const { riderA, orderId } = seedDeliveryFixture(db, { order: { status: 'delivered', deliveryPartnerId: 'rider-A' } });
-    const res = await request(server).post(`/api/delivery/reject/${orderId}`).set(bearer(riderA.id, 'delivery')).send({});
+    const { riderA, orderId } = seedDeliveryFixture(db, {
+      order: { status: 'delivered', deliveryPartnerId: 'rider-A' },
+    });
+    const res = await request(server)
+      .post(`/api/delivery/reject/${orderId}`)
+      .set(bearer(riderA.id, 'delivery'))
+      .send({});
     expect(res.status).toBe(409);
     const orderDoc = await db.collection('orders').doc(orderId).get();
     expect(orderDoc.data().status).toBe('delivered');

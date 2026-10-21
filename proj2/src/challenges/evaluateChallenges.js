@@ -23,8 +23,7 @@ const metricSelectors = {
   teamDeliveredOrders: (orders) => orders.length,
   teamDeliveredSpend: (orders) =>
     orders.reduce((sum, order) => sum + (Number(order.totalAmount) || 0), 0),
-  uniqueActiveMembers: (orders) =>
-    new Set(orders.map((order) => order.customerId)).size,
+  uniqueActiveMembers: (orders) => new Set(orders.map((order) => order.customerId)).size,
 };
 
 /**
@@ -47,7 +46,7 @@ const evaluateChallenge = (definition, scopedOrders) => {
   if (!selector) {
     throw new Error(
       `evaluateChallenges: unknown metric "${definition.metric}" in definition ` +
-      `"${definition.id}" — add a selector to metricSelectors or use an existing metric`
+        `"${definition.id}" — add a selector to metricSelectors or use an existing metric`
     );
   }
 
@@ -80,7 +79,12 @@ const evaluateChallenge = (definition, scopedOrders) => {
  * @param {Array}  [params.definitions] defaults to challengeDefinitions
  * @returns {Array} one evaluation result per definition
  */
-const evaluateChallenges = ({ orders = [], memberIds = [], weekKey, definitions = challengeDefinitions }) => {
+const evaluateChallenges = ({
+  orders = [],
+  memberIds = [],
+  weekKey,
+  definitions = challengeDefinitions,
+}) => {
   if (!weekKey) {
     throw new Error('evaluateChallenges: weekKey is required (e.g. "2026-W42")');
   }

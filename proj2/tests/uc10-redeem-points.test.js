@@ -9,7 +9,9 @@
 // at the `await pointsRef.get()` boundary -- this is what makes the race-condition test below a
 // faithful reproduction of the check-then-act bug rather than an artifact of the mock.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -25,7 +27,9 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -61,7 +65,10 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
   test('extension 2a: points < 1 or non-integer -> 400 (points.js:69)', async () => {
     seedPoints('cust-1', 500);
 
-    const zero = await request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 0 });
+    const zero = await request(server)
+      .post('/api/points/use')
+      .set(bearer('cust-1', 'customer'))
+      .send({ customerId: 'cust-1', points: 0 });
     expect(zero.status).toBe(400);
 
     const decimal = await request(server)
@@ -80,7 +87,10 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
   test('extension 3a: insufficient balance -> 400 with available vs. requested points (points.js:92-97)', async () => {
     seedPoints('cust-1', 50);
 
-    const res = await request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 100 });
+    const res = await request(server)
+      .post('/api/points/use')
+      .set(bearer('cust-1', 'customer'))
+      .send({ customerId: 'cust-1', points: 100 });
     expect(res.status).toBe(400);
     expect(res.body.availablePoints).toBe(50);
     expect(res.body.requestedPoints).toBe(100);
@@ -104,8 +114,14 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
     seedPoints('cust-1', 100);
 
     const [resA, resB] = await Promise.all([
-      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ points: 60 }),
-      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ points: 60 }),
+      request(server)
+        .post('/api/points/use')
+        .set(bearer('cust-1', 'customer'))
+        .send({ points: 60 }),
+      request(server)
+        .post('/api/points/use')
+        .set(bearer('cust-1', 'customer'))
+        .send({ points: 60 }),
     ]);
 
     expect([resA.status, resB.status].sort()).toEqual([200, 400]);
@@ -137,7 +153,9 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
   // --- M1 auth: identity comes from the token, not the body ---
   test('M1: redeeming without a token -> 401, balance untouched', async () => {
     seedPoints('cust-1', 500);
-    const res = await request(server).post('/api/points/use').send({ customerId: 'cust-1', points: 100 });
+    const res = await request(server)
+      .post('/api/points/use')
+      .send({ customerId: 'cust-1', points: 100 });
     expect(res.status).toBe(401);
     const doc = await db.collection('points').doc('cust-1').get();
     expect(doc.data().availablePoints).toBe(500);
@@ -167,7 +185,10 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
     seedPoints('cust-1', 500);
     const res = await request(server)
       .post('/api/points/use')
-      .set({ Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjdXN0LTEiLCJyb2xlIjoiY3VzdG9tZXIifQ.bad' })
+      .set({
+        Authorization:
+          'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjdXN0LTEiLCJyb2xlIjoiY3VzdG9tZXIifQ.bad',
+      })
       .send({ points: 100 });
     expect(res.status).toBe(401);
   });
@@ -231,8 +252,14 @@ describe('UC10: Redeem points for a discount (Customer)', () => {
     seedPoints('cust-1', 100);
 
     const [resA, resB] = await Promise.all([
-      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 60 }),
-      request(server).post('/api/points/use').set(bearer('cust-1', 'customer')).send({ customerId: 'cust-1', points: 60 }),
+      request(server)
+        .post('/api/points/use')
+        .set(bearer('cust-1', 'customer'))
+        .send({ customerId: 'cust-1', points: 60 }),
+      request(server)
+        .post('/api/points/use')
+        .set(bearer('cust-1', 'customer'))
+        .send({ customerId: 'cust-1', points: 60 }),
     ]);
 
     const successCount = [resA, resB].filter((r) => r.status === 200).length;

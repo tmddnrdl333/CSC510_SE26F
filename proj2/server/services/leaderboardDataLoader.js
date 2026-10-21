@@ -80,7 +80,7 @@ async function loadUserScoreData(userId) {
 
   return {
     userId,
-    totalPoints: pointsDoc.exists ? (pointsDoc.data().totalPoints || 0) : 0,
+    totalPoints: pointsDoc.exists ? pointsDoc.data().totalPoints || 0 : 0,
     badgeTiers: sumBadgeTiers(badgesSnapshot),
     deliveredOrderCount,
   };

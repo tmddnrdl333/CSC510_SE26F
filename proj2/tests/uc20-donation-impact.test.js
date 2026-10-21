@@ -5,7 +5,9 @@
 // Environment note: Firestore is mocked (see tests/helpers/fakeFirestore.js) because neither
 // Docker nor the Firestore emulator toolchain is available in this environment.
 
-jest.mock('../server/config/firebase', () => require('./helpers/fakeFirestore').createFirestoreMock());
+jest.mock('../server/config/firebase', () =>
+  require('./helpers/fakeFirestore').createFirestoreMock()
+);
 
 const request = require('supertest');
 const { db } = require('../server/config/firebase');
@@ -21,7 +23,9 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
     server = app.listen(0);
   });
 
-  afterAll((done) => { server.close(done); });
+  afterAll((done) => {
+    server.close(done);
+  });
 
   beforeEach(() => db.__reset());
 
@@ -54,7 +58,9 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
   test('FIXED (M1, #75): POST /update no longer exists -- anonymous callers get 404 and nothing is written', async () => {
     seedDeliveredOrders(5);
 
-    const updateRes = await request(server).post('/api/donations/update').send({ mealsToAdd: 999999999 });
+    const updateRes = await request(server)
+      .post('/api/donations/update')
+      .send({ mealsToAdd: 999999999 });
     expect(updateRes.status).toBe(404);
 
     const settingsDoc = await db.collection('settings').doc('donations').get();
@@ -100,15 +106,29 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
   });
 
   test('POST /record rejects zero/negative amounts -> 400 (donations.js:101)', async () => {
-    const zero = await request(server).post('/api/donations/record').set(bearer('customer-1', 'customer')).send({ amount: 0 });
+    const zero = await request(server)
+      .post('/api/donations/record')
+      .set(bearer('customer-1', 'customer'))
+      .send({ amount: 0 });
     expect(zero.status).toBe(400);
-    const negative = await request(server).post('/api/donations/record').set(bearer('customer-1', 'customer')).send({ amount: -5 });
+    const negative = await request(server)
+      .post('/api/donations/record')
+      .set(bearer('customer-1', 'customer'))
+      .send({ amount: -5 });
     expect(negative.status).toBe(400);
   });
 
   test('GET /history returns recorded donations, most recent first (donations.js:76-94)', async () => {
-    db.__seed('donationHistory', 'd1', { id: 'd1', amount: 10, createdAt: new Date('2026-01-01T00:00:00Z') });
-    db.__seed('donationHistory', 'd2', { id: 'd2', amount: 20, createdAt: new Date('2026-06-01T00:00:00Z') });
+    db.__seed('donationHistory', 'd1', {
+      id: 'd1',
+      amount: 10,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    });
+    db.__seed('donationHistory', 'd2', {
+      id: 'd2',
+      amount: 20,
+      createdAt: new Date('2026-06-01T00:00:00Z'),
+    });
 
     const res = await request(server).get('/api/donations/history');
     expect(res.status).toBe(200);
@@ -123,13 +143,16 @@ describe('UC20: See the donation impact (Meal-for-a-Meal)', () => {
     // settings counter.
     seedDeliveredOrders(25); // derived: floor(25/10) = 2
     db.__seed('challengeProgress', 'weekly-team-orders-15_t1_2026-W43', {
-      definitionId: 'weekly-team-orders-15', status: 'rewarded', // +5 meals
+      definitionId: 'weekly-team-orders-15',
+      status: 'rewarded', // +5 meals
     });
     db.__seed('challengeProgress', 'weekly-whole-squad_t1_2026-W43', {
-      definitionId: 'weekly-whole-squad', status: 'rewarded', // badge, +0 meals
+      definitionId: 'weekly-whole-squad',
+      status: 'rewarded', // badge, +0 meals
     });
     db.__seed('challengeProgress', 'weekly-team-spend-300_t1_2026-W43', {
-      definitionId: 'weekly-team-spend-300', status: 'active', // unrewarded, +0
+      definitionId: 'weekly-team-spend-300',
+      status: 'active', // unrewarded, +0
     });
 
     const res = await request(server).get('/api/donations/stats');
