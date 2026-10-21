@@ -27,10 +27,13 @@ Hungry Wolf is a full-stack web application built with modern technologies to cr
 ## 🏗️ Architecture
 
 ```
-hungry-wolf/
-├── frontend/          # React frontend
-├── backend/          # Node.js backend
-└── docs/           # Documentation
+proj2/
+├── client/    # React frontend (TypeScript)
+├── server/    # Express backend: routes, services, middleware
+├── src/       # Shared domain logic (challenge definitions, evaluator, ISO week)
+├── tests/     # Jest suites + fake Firestore test double
+├── scripts/   # M0 eval (repeat-order-rate experiment)
+└── docs/      # Design docs, rubric, generated API docs
 ```
 
 ## 🚀 Quick Start
@@ -165,12 +168,6 @@ This project follows software sustainability principles:
 ## 📄 License
 
 MIT License - see LICENSE file for details
-
-### 🔗 Live Demo
-You can see the working demo using the link below:  
-[View Live Demo for Project 2](https://drive.google.com/file/d/1R85vYgjbKL3zBZsimE7ruI46UfgAdN8x/view?usp=drive_link)
-
-[View Live demo for Project 3](https://youtu.be/l6SIhW_ra_A)
 
 ---
 
