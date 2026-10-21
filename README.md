@@ -24,7 +24,7 @@ A gamified food-delivery platform that connects customers, restaurants, and deli
 
 **Docs & guides:** [API docs (generated)](proj2/docs/api/index.html) · [Install](proj2/docs/INSTALL.md) · [Contributing / adding a challenge type](proj2/docs/CONTRIBUTING.md) · [Milestones](proj2/docs/MILESTONES.md) · [DB design](proj2/docs/DB_DESIGN_M2_M3.md) · [AI use disclosure](proj2/docs/AI_USE.md) · [Third-party licenses](proj2/docs/THIRD_PARTY_LIBRARIES.md)
 
-<!-- TODO(walkthrough): link the 2-5 min feature walk-through video here. -->
+**[Watch the feature walk-through (3.5 min)](https://go.ncsu.edu/rh4swnv)**
 
 ## 🎯 Project Overview
 
