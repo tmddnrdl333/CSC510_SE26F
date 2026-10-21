@@ -3,9 +3,9 @@
 [![Build Status](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml/badge.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-325%20passing%20%2B%204%20documented%20reds-brightgreen.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/github/tmddnrdl333/CSC510_SE26F/graph/badge.svg)](https://codecov.io/github/tmddnrdl333/CSC510_SE26F)
-[![ESLint](https://img.shields.io/badge/lint-ESLint-blue.svg)](proj2/.eslintrc.json)
-[![Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](proj2/.prettierrc)
-[![TypeScript](https://img.shields.io/badge/types-tsc%20--noEmit-3178c6.svg)](proj2/client/tsconfig.json)
+[![ESLint](https://img.shields.io/badge/lint-ESLint%20(CI)-blue.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
+[![Prettier](https://img.shields.io/badge/code_style-prettier%20(CI)-ff69b4.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/types-tsc%20--noEmit%20(CI)-3178c6.svg)](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](proj2/docs/LICENSE.md)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](proj2/docs/CONTRIBUTING.md)
 [![DOI](https://zenodo.org/badge/1349823474.svg)](https://zenodo.org/badge/latestdoi/1349823474)
@@ -28,10 +28,13 @@ Hungry Wolf is a full-stack web application built with modern technologies to cr
 ## 🏗️ Architecture
 
 ```
-hungry-wolf/
-├── frontend/          # React frontend
-├── backend/          # Node.js backend
-└── docs/           # Documentation
+proj2/
+├── client/    # React frontend (TypeScript)
+├── server/    # Express backend: routes, services, middleware
+├── src/       # Shared domain logic (challenge definitions, evaluator, ISO week)
+├── tests/     # Jest suites + fake Firestore test double
+├── scripts/   # M0 eval (repeat-order-rate experiment)
+└── docs/      # Design docs, rubric, generated API docs
 ```
 
 ## 🚀 Quick Start
@@ -62,10 +65,10 @@ Live progress, one issue per step: [GitHub milestones](https://github.com/tmddnr
 
 | Milestone | Status |
 |---|---|
-| M0: Repeat-order-rate eval | ✅ Merged ([#11](https://github.com/tmddnrdl333/CSC510_SE26F/pull/11)) |
-| M1: Trust layer | 🔍 In review ([#51](https://github.com/tmddnrdl333/CSC510_SE26F/pull/51)) |
-| M2: Social leaderboard | 🚧 In progress ([#35](https://github.com/tmddnrdl333/CSC510_SE26F/pull/35)) |
-| M3: Challenges engine + friend team challenges | 🚧 In progress |
+| M0: Repeat-order-rate eval | ✅ Done ([milestone](https://github.com/tmddnrdl333/CSC510_SE26F/milestone/1?closed=1), eval result: [#82](https://github.com/tmddnrdl333/CSC510_SE26F/issues/82)) |
+| M1: Trust layer | ✅ Done ([milestone](https://github.com/tmddnrdl333/CSC510_SE26F/milestone/2?closed=1), 20/20 issues closed) |
+| M2: Social leaderboard | ✅ Done ([milestone](https://github.com/tmddnrdl333/CSC510_SE26F/milestone/3?closed=1), 10/10 issues closed) |
+| M3: Challenges engine + friend team challenges | ✅ Done ([milestone](https://github.com/tmddnrdl333/CSC510_SE26F/milestone/4?closed=1), 9/9 issues closed) |
 
 ### M0: Repeat-order-rate eval ✅
 Hypothesis: the weekly repeat-order rate rises by at least 20% with the leaderboard, compared with a no-leaderboard baseline.
@@ -74,7 +77,7 @@ Hypothesis: the weekly repeat-order rate rises by at least 20% with the leaderbo
 - [x] Runs in CI on every push, and on a pilot dataset (`npm run eval:m0:pilot`)
 - [x] Issue template for recording a persevere / re-plan / descope decision if it fails
 
-### M1: Trust layer 🔍
+### M1: Trust layer ✅
 The leaderboard and challenges rank points, deliveries and donations, so those numbers must not be forgeable.
 - [x] Passwords hashed with bcrypt; login returns a JWT; `requireAuth` / `requireRole` middleware ([how to protect a route](proj2/docs/CONTRIBUTING.md))
 - [x] Only the assigned delivery partner can pick up, deliver or release an order (403 for anyone else). Each delivery pays out once.
@@ -84,19 +87,19 @@ The leaderboard and challenges rank points, deliveries and donations, so those n
 - [x] Donation counter and account edits require login
 - [x] 85 new tests (150 → 235 total); tests that recorded these bugs now check the fixes
 
-### M2: Social leaderboard 🚧
-- [x] Friendships: send / accept / reject / list routes and a `getFriends` helper (in review)
-- [ ] Combined score of points, badges and donations
-- [ ] `GET /api/leaderboard`, global and `?scope=friends`
-- [ ] Leaderboard page with a Global/Friends toggle
+### M2: Social leaderboard ✅
+- [x] Friendships: send / accept / reject / list routes and a `getFriends` helper
+- [x] Combined score of points, badges and donations
+- [x] `GET /api/leaderboard`, global and `?scope=friends`
+- [x] Leaderboard page with a Global/Friends toggle
 
-### M3: Challenges engine + friend team challenges 🚧
+### M3: Challenges engine + friend team challenges ✅
 Friends form a team and take on weekly challenges together, e.g. "15 team orders this week = 5 extra donated meals".
 - [x] Challenge definitions and a pure evaluator: a new challenge type is a new definition, not new code
 - [x] Transaction support in the test Firestore double (for exactly-once rewards)
-- [ ] Teams: create / join / leave / list
-- [ ] Exactly-once reward payout, progress API, team progress page
-- [ ] CONTRIBUTING tutorial: how to add a challenge type
+- [x] Teams: create / join / leave / list
+- [x] Exactly-once reward payout, progress API, team progress page
+- [x] CONTRIBUTING tutorial: how to add a challenge type
 
 ## 🛠️ Tech Stack
 
@@ -166,12 +169,6 @@ This project follows software sustainability principles:
 ## 📄 License
 
 MIT License - see LICENSE file for details
-
-### 🔗 Live Demo
-You can see the working demo using the link below:  
-[View Live Demo for Project 2](https://drive.google.com/file/d/1R85vYgjbKL3zBZsimE7ruI46UfgAdN8x/view?usp=drive_link)
-
-[View Live demo for Project 3](https://youtu.be/l6SIhW_ra_A)
 
 ---
 

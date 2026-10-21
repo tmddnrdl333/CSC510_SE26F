@@ -33,7 +33,7 @@ before submission.
 | Tests exist, expected + failure cases | [329 tests](https://github.com/tmddnrdl333/CSC510_SE26F/tree/main/proj2/tests) (325 pass + 4 documented 1a reds, [#69–72](https://github.com/tmddnrdl333/CSC510_SE26F/issues/69)); failure/abuse cases throughout (concurrency, 401/403, replay) | 3 |
 | Serious share of the code base | 5,960 test LOC vs 4,782 server+src LOC (55%) | 3 |
 | Tests run on every commit (CI) | [GitHub Actions](https://github.com/tmddnrdl333/CSC510_SE26F/actions/workflows/ci.yml) — jest + M0 eval on every push/PR | 3 |
-| Coverage measured, badge shows it | 75% statements (server+src, [jest.config.js](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/jest.config.js)) uploaded to [Codecov](https://codecov.io/github/tmddnrdl333/CSC510_SE26F); **(pending)** confirm badge renders our number | 2 |
+| Coverage measured, badge shows it | 78% (server+src, [jest.config.js](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/jest.config.js)) uploaded to [Codecov](https://codecov.io/github/tmddnrdl333/CSC510_SE26F); README badge renders the live number | 3 |
 
 ## Docs
 
@@ -50,19 +50,18 @@ before submission.
 
 | Item | Evidence | Score |
 |---|---|---|
-| README badges, all working | [README](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/README.md): build/tests/codecov/ESLint/Prettier/tsc/license — all repointed to THIS repo; DOI pending | 2 |
+| README badges, all working | [README](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/README.md): build/tests/codecov/ESLint/Prettier/tsc/license/DOI — all live and pointing at THIS repo; lint/format/type badges click through to the CI run | 3 |
 | .gitignore | [.gitignore](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/.gitignore) covers .env, node_modules, keys | 3 |
 | INSTALL.md | [docs/INSTALL.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/INSTALL.md) | 3 |
 | LICENSE.md | [docs/LICENSE.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/LICENSE.md) (MIT) | 3 |
 | CODE-OF-CONDUCT.md | [docs/CODE-OF-CONDUCT.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/CODE-OF-CONDUCT.md) | 3 |
 | CONTRIBUTING.md | [docs/CONTRIBUTING.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/CONTRIBUTING.md) — standards + extend-safely tutorial | 3 |
-| Style/formatter/syntax configs + badges | [.eslintrc.json](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/.eslintrc.json), [.prettierrc](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/.prettierrc), [tsconfig.json](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/client/tsconfig.json) + badges; prettier not yet CI-enforced | 2 |
+| Style/formatter/syntax configs + badges | [.eslintrc.json](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/.eslintrc.json), [.prettierrc](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/.prettierrc), [tsconfig.json](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/client/tsconfig.json) + badges; ESLint, `prettier --check` and `tsc --noEmit` all enforced in [CI](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/.github/workflows/ci.yml) | 3 |
 | DOI badge (Zenodo) | [DOI badge](https://zenodo.org/badge/latestdoi/1349823474) in the README, minted from [release v1.0.0](https://github.com/tmddnrdl333/CSC510_SE26F/releases/tag/v1.0.0) | 3 |
 | THIRD_PARTY_LIBRARIES.md | [docs/THIRD_PARTY_LIBRARIES.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/THIRD_PARTY_LIBRARIES.md) — 42 direct deps with licenses | 3 |
 | AI use visible and disclosed | [docs/AI_USE.md](https://github.com/tmddnrdl333/CSC510_SE26F/blob/main/proj2/docs/AI_USE.md) + verbatim prompts/transcripts in proj1a-report/, proj1b-report/ + human review trail in PRs ([#35](https://github.com/tmddnrdl333/CSC510_SE26F/pull/35), [#53](https://github.com/tmddnrdl333/CSC510_SE26F/pull/53)) | 3 |
 
 ## Sum
 
-**77 / 99** today. Clear path to ~86: teaser (+2), walk-through (+2),
-poster QR + chat screenshots (+1), coverage badge confirmed (+1),
-demo rehearsal (+1), prettier in CI (+1).
+**80 / 99** today. Clear path to ~86: teaser (+2), walk-through (+2),
+poster QR + chat screenshots (+1), demo rehearsal (+1).
